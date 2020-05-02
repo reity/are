@@ -21,11 +21,14 @@ class are(dict):
     def star(self: are) -> are:
         return are({operation('star'): [self]})
 
-    def __rshift__(self: are, other: are) -> are:
+    def __add__(self: are, other: are) -> are:
         return are({operation('con'): [self, other]})
 
     def __or__(self: are, other: are) -> are:
         return are({operation('alt'): [self, other]})
+
+    def __and__(self: are, other: are) -> are:
+        return are({operation('and'): [self, other]})
 
 if __name__ == "__main__":
     doctest.testmod()
