@@ -56,51 +56,47 @@ class are(dict):
         elif o == 'and':
             return '(' + (" & ".join(a.embedded() for a in self[o])) + ')'
 
-    class random():
+    @staticmethod
+    def random(size = 1, literals = ['a']):
         '''
-        Methods for generating random expressions in different ways.
+        Method for generating random expressions.
         '''
+        if size == 1:
+            return random.choice([are.emp(), are.lit(random.choice(literals))])
+        elif size == 2:
+            return are.random(size - 1, literals).star()
+        elif size >= 3:
+            size -= 1
+            (op, diff) = (random.randint(0,3), random.randint(1, size - 1))
+            if op == 0:
+                return are.random(size, literals).star()
+            elif op == 1:
+                return are.random(size - diff, literals) + are.random(diff, literals)
+            elif op == 2:
+                return are.random(size - diff, literals) | are.random(diff, literals)
+            elif op == 3:
+                return are.random(size - diff, literals) & are.random(diff, literals)
 
-        @staticmethod
-        def size(size = 1, literals = ['a']):
-            if size == 1:
-                return random.choice([are.emp(), are.lit(random.choice(literals))])
-            elif size == 2:
-                return are.random.size(size - 1, literals).star()
-            elif size >= 3:
-                size -= 1
-                (op, diff) = (random.randint(0,3), random.randint(1, size - 1))
-                if op == 0:
-                    return are.random.size(size, literals).star()
-                elif op == 1:
-                    return are.random.size(size - diff, literals) + are.random.size(diff, literals)
-                elif op == 2:
-                    return are.random.size(size - diff, literals) | are.random.size(diff, literals)
-                elif op == 3:
-                    return are.random.size(size - diff, literals) & are.random.size(diff, literals)
-
-    class exhaustive():
+    @staticmethod
+    def exhaustive(size = 1, literals = ['a']):
         '''
-        Methods for generating random expressions in different ways.
+        Method for creating an exhaustive list of all expressions.
         '''
-
-        @staticmethod
-        def size(size = 1, literals = ['a']):
-            if size == 1:
-                return [are.emp()] + [are.lit(literal) for literal in literals]
-            elif size == 2:
-                return [r.star() for r in are.exhaustive.size(size - 1, literals)]
-            elif size >= 3:
-                size -= 1
-                (op, diff) = (random.randint(0,3), random.randint(1, size - 1))
-                rs = [r.star() for r in are.exhaustive.size(size, literals)]
-                for diff in range(1, size):
-                    r_size_minus_diff = are.exhaustive.size(size - diff, literals)
-                    r_diff = are.exhaustive.size(diff, literals)
-                    rs.extend([r1 + r2 for r1 in r_size_minus_diff for r2 in r_diff])
-                    rs.extend([r1 | r2 for r1 in r_size_minus_diff for r2 in r_diff])
-                    rs.extend([r1 & r2 for r1 in r_size_minus_diff for r2 in r_diff])
-                return rs
+        if size == 1:
+            return [are.emp()] + [are.lit(literal) for literal in literals]
+        elif size == 2:
+            return [r.star() for r in are.exhaustive(size - 1, literals)]
+        elif size >= 3:
+            size -= 1
+            (op, diff) = (random.randint(0,3), random.randint(1, size - 1))
+            rs = [r.star() for r in are.exhaustive(size, literals)]
+            for diff in range(1, size):
+                r_size_minus_diff = are.exhaustive(size - diff, literals)
+                r_diff = are.exhaustive(diff, literals)
+                rs.extend([r1 + r2 for r1 in r_size_minus_diff for r2 in r_diff])
+                rs.extend([r1 | r2 for r1 in r_size_minus_diff for r2 in r_diff])
+                rs.extend([r1 & r2 for r1 in r_size_minus_diff for r2 in r_diff])
+            return rs
 
 emp = are.emp
 lit = are.lit
