@@ -98,6 +98,128 @@ class are(dict):
                 rs.extend([r1 & r2 for r1 in r_size_minus_diff for r2 in r_diff])
             return rs
 
+    def __contains__(self, s, rest = None):
+        '''
+        Determine whether the supplied string is matched by the
+        regular expression. For Kleene star and alternation, as
+        much of the string as possible is consumed. For intersection,
+        both regular expressions must consume the same number of
+        string characters in order for the overall intersection
+        expression to match a string.
+        '''
+        o = list(self.keys())[0]
+        vs = list(self.values())[0]
+        if o == 'emp':
+            return False
+
+        elif o == 'lit':
+            s0 = list(self.values())[0][0]
+            if s.startswith(s0):
+                if rest is not None:
+                    rest[0] = s[len(s0):]
+                    return True
+                else:
+                    return len(s) == len(s0)
+            else:
+                return False
+
+        elif o == 'star':
+            contained = True
+            while contained:
+                rest_ = [None]
+                contained = vs[0].__contains__(s, rest_)
+                if contained:
+                    s = rest_[0]
+
+            if rest is not None:
+                rest[0] = s
+                return True
+            else:
+                return len(s) == 0
+
+            return True
+
+        elif o == 'con':
+            (a1, a2) = vs
+
+            rest_ = [None]
+            if a1.__contains__(s, rest_):
+                s = rest_[0]
+            else:
+                return False
+
+            rest_ = [None]
+            if a2.__contains__(s, rest_):
+                s = rest_[0]
+            else:
+                return False
+
+            if rest is not None:
+                rest[0] = s
+                return True
+            else:
+                return len(s) == 0
+
+            return True
+
+        elif o == 'alt':
+            (a1, a2) = vs
+            rest_ = [None]
+            (s1, s2) = (None, None)
+            
+            if a1.__contains__(s, rest_):
+                s1 = rest_[0]
+            if a2.__contains__(s, rest_):
+                s2 = rest_[0]
+            
+            if s1 is None and s2 is None:
+                return False
+            elif s1 is not None and s2 is None:
+                if rest is not None:
+                    rest[0] = s1
+                    return True
+                else:
+                    return len(s1) == 0
+            elif s1 is None and s2 is not None:
+                if rest is not None:
+                    rest[0] = s2
+                    return True
+                else:
+                    return len(s2) == 0
+            else:
+                if len(s1) <= len(s2):
+                    if rest is not None:
+                        rest[0] = s1
+                        return True
+                    else:
+                        return len(s1) == 0
+                else:
+                    if rest is not None:
+                        rest[0] = s2
+                        return True
+                    else:
+                        return len(s2) == 0
+
+        elif o == 'and':
+            (a1, a2) = vs
+            rest_ = [None]
+            (s1, s2) = (None, None)
+
+            if a1.__contains__(s, rest_):
+                s1 = rest_[0]
+            if a2.__contains__(s, rest_):
+                s2 = rest_[0]
+
+            if s1 is not None and s2 is not None and len(s1) == len(s2):
+                if rest is not None:
+                    rest[0] = s1
+                    return True
+                else:
+                    return len(s1) == 0
+
+            else:
+                return False
+
 emp = are.emp
 lit = are.lit
 
