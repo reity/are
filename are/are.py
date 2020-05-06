@@ -220,6 +220,37 @@ class are(dict):
             else:
                 return False
 
+    def strings(self, length):
+        o = list(self.keys())[0]
+        vs = list(self.values())[0]
+        if o == 'emp':
+            pass # No strings accepted.
+        elif o == 'lit':
+            s = list(self.values())[0][0]
+            if length == len(s):
+                yield s
+        elif o == 'star':
+            tmp = are.lit('')
+            for i in range(0, length):
+                for s in tmp.strings(length):
+                    yield s
+                tmp = tmp + vs[0]
+        elif o == 'con':
+            for i in range(0,length):
+                for s1 in vs[0].strings(i):
+                    for s2 in vs[1].strings(length - i):
+                        yield s1 + s2
+        elif o == 'alt':
+            for s in vs[0].strings(length):
+                yield s
+            for s in vs[1].strings(length):
+                if not (s in vs[0]):
+                    yield s
+        elif o == 'and':
+            for s in vs[0].strings(length):
+                if s in vs[1]:
+                    yield s
+
 emp = are.emp
 lit = are.lit
 
