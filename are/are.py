@@ -221,6 +221,156 @@ class are(dict):
             else:
                 return False
 
+    def finite(self):
+        '''
+        Determine whether the set of strings that satisfy this regular
+        expression is finite. Store the result for future retrieval,
+        and return it if it has already been computed.
+        '''
+        if hasattr(self, '_finite'):
+            return self._finite
+
+        o = list(self.keys())[0]
+        vs = list(self.values())[0]
+        if o == 'emp':
+            self._finite = True
+        elif o == 'lit':
+            self._finite = True
+        elif o == 'star':
+            self._finite = False
+        elif o == 'con':
+            (a1, a2) = vs
+            self._finite = a1.finite() and a2.finite()
+        elif o == 'alt':
+            (a1, a2) = vs
+            self._finite = a1.finite() and a2.finite()
+        elif o == 'and':
+            (a1, a2) = vs
+            self._finite = a1.finite() or a2.finite()
+
+        return self._finite
+
+    def quantity_ub(self):
+        '''
+        Determine the upper bound on the number of strings that satisfy this
+        regular expression. Store the result for future retrieval, and return
+        it if it has already been computed.
+        '''
+        if hasattr(self, '_quantity_ub'):
+            return self._quantity_ub
+
+        o = list(self.keys())[0]
+        vs = list(self.values())[0]
+        if o == 'emp':
+            self._quantity_ub = 0
+        elif o == 'lit':
+            self._quantity_ub = 1
+        elif o == 'star':
+            a0 = vs[0]
+            self._quantity_ub = float('inf') if a0.quantity_ub() > 0 else 1
+        elif o == 'con':
+            (a1, a2) = vs
+            self._quantity_ub = a1.quantity_ub() * a2.quantity_ub()
+        elif o == 'alt':
+            (a1, a2) = vs
+            self._quantity_ub = a1.quantity_ub() + a2.quantity_ub()
+        elif o == 'and':
+            (a1, a2) = vs
+            self._quantity_ub = max(a1.quantity_ub(), a2.quantity_ub())
+
+        return self._quantity_ub
+
+    def quantity_lb(self):
+        '''
+        Determine the lower bound on the number of strings that satisfy this
+        regular expression. Store the result for future retrieval, and return
+        it if it has already been computed.
+        '''
+        if hasattr(self, '_quantity_lb'):
+            return self._quantity_lb
+
+        o = list(self.keys())[0]
+        vs = list(self.values())[0]
+        if o == 'emp':
+            self._quantity_lb = 0
+        elif o == 'lit':
+            self._quantity_lb = 1
+        elif o == 'star':
+            a0 = vs[0]
+            self._quantity_lb = float('inf') if a0.quantity_lb() > 0 else 1
+        elif o == 'con':
+            (a1, a2) = vs
+            self._quantity_lb = a1.quantity_lb() * a2.quantity_lb()
+        elif o == 'alt':
+            (a1, a2) = vs
+            self._quantity_lb = max(a1.quantity_lb(), a2.quantity_lb())
+        elif o == 'and':
+            (a1, a2) = vs
+            self._quantity_lb = min(a1.quantity_lb(), a2.quantity_lb())
+
+        return self._quantity_lb
+
+
+    def length_ub(self):
+        '''
+        Determine the upper bound on the length of any string that satisfies
+        this regular expression. Store the result for future retrieval, and
+        return it if it has already been computed.
+        '''
+        if hasattr(self, '_length_ub'):
+            return self._length_ub
+
+        o = list(self.keys())[0]
+        vs = list(self.values())[0]
+        if o == 'emp':
+            self._length_ub = None
+        elif o == 'lit':
+            self._length_ub = len(vs[0])
+        elif o == 'star':
+            a0 = vs[0]
+            self._length_ub = float('inf') if a0.length_ub() > 0 else 0
+        elif o == 'con':
+            (a1, a2) = vs
+            self._length_ub = a1.length_ub() + a2.length_ub()
+        elif o == 'alt':
+            (a1, a2) = vs
+            self._length_ub = max(a1.length_ub(), a2.length_ub())
+        elif o == 'and':
+            (a1, a2) = vs
+            self._length_ub = min(a1.length_ub(), a2.length_ub())
+
+        return self._length_ub
+
+    def length_lb(self):
+        '''
+        Determine the lower bound on the length of any string that satisfies
+        this regular expression. Store the result for future retrieval, and
+        return it if it has already been computed.
+        '''
+        if hasattr(self, '_length_lb'):
+            return self._length_lb
+
+        o = list(self.keys())[0]
+        vs = list(self.values())[0]
+        if o == 'emp':
+            self._length_lb = None
+        elif o == 'lit':
+            self._length_lb = len(vs[0])
+        elif o == 'star':
+            a0 = vs[0]
+            self._length_lb = 0
+        elif o == 'con':
+            (a1, a2) = vs
+            self._length_lb = a1.length_lb() + a2.length_lb()
+        elif o == 'alt':
+            (a1, a2) = vs
+            self._length_lb = min(a1.length_lb(), a2.length_lb())
+        elif o == 'and':
+            (a1, a2) = vs
+            self._length_lb = max(a1.length_lb(), a2.length_lb())
+
+        return self._length_lb
+
     def strings(self, length = None):
         if length is None:
             for length in itertools.count():
