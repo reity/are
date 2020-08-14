@@ -27,6 +27,10 @@ All unit tests are included in the module itself and can be executed using `doct
 
     python are/are.py -v
 
+Style conventions are enforced using `Pylint <https://www.pylint.org/>`_::
+
+    pylint are
+
 Contributions
 -------------
 In order to contribute to the source code, open an issue or submit a pull request on the GitHub page for this library.
