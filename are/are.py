@@ -6,6 +6,8 @@ mathematical objects.
 
 from __future__ import annotations
 import doctest
+from collections.abc import Iterable
+from itertools import chain
 
 class are(tuple):
     """
@@ -27,8 +29,30 @@ class emp(are):
     def __new__(cls):
         return super().__new__(cls)
 
-    def __call__(self, string, full=True):
-        return 0 if not full or len(string) == 0 else None
+    def __call__(self, string, full=True, _string=None, _success=None):
+        if not isinstance(string, Iterable):
+            raise ValueError('input must be an iterable')
+        string = iter(string)
+
+        # Reconstruction of string returned back to invocation.
+        _string = {} if _string is None else _string
+        _success = {} if _success is None else _success
+
+        try:
+            symbol = next(string)
+            _string[()] = chain([symbol], string) # Restore symbol to string.
+
+            if not full:
+                _success[()] = chain([symbol], string)
+                return 0
+            else:
+                _success[()] = None
+                return None
+
+        except StopIteration:
+            _string[()] = string
+            _success[()] = string
+            return 0
 
 class lit(are):
     """
@@ -43,13 +67,40 @@ class lit(are):
     def __new__(cls, argument):
         return super().__new__(cls, [argument])
 
-    def __call__(self, string, full=True):
-        for symbol in string:
-            if symbol == self[0]:
-                return 1 if not full or len(string) == 1 else None
-            break # Only check the first symbol.
+    def __call__(self, string, full=True, _string=None, _success=None):
+        if not isinstance(string, Iterable):
+            raise ValueError('input must be an iterable')
+        string = iter(string)
 
-        return None # String does not satisfy the regular expression.
+        # Reconstruction of string returned back to invocation.
+        _string = {} if _string is None else _string
+        _success = {} if _success is None else _success
+
+        try:
+            symbol = next(string)
+
+            if symbol == self[0]:
+                _string[()] = chain([symbol], string) # Restore symbol to string.
+
+                if not full:
+                    _success[()] = string
+                    return 1
+                else:
+                    _string_ = {}
+                    result = emp()(string, full=True, _string=_string_)
+                    if result == 0:
+                        _success[()] = string
+                        return 1
+                    string = _string_[()] # Restore string if above attempt failed.
+
+            _string[()] = chain([symbol], string) # Restore symbol to string.
+            _success[()] = None
+            return None # String does not satisfy the regular expression.
+
+        except StopIteration:
+            _string[()] = string
+            _success[()] = None
+            return None
 
 class con(are):
     """
@@ -60,17 +111,53 @@ class con(are):
     (2, None, None, None)
     >>> (r('a', full=False), r('abc', full=False), r('cd', full=False))
     (None, 2, None)
+    >>> r = con(lit('a'), con(lit('b'), lit('c')))
+    >>> (r('abc'), r('abcd', full=False), r('ab'))
+    (3, 3, None)
+    >>> r = con(con(lit('a'), lit('b')), lit('c'))
+    >>> r('abc')
+    3
     """
     def __new__(cls, *arguments):
         return super().__new__(cls, [*arguments])
 
-    def __call__(self, s, full=True):
-        lengths = self[0](s, full=False)
-        if lengths is not None and len(s) >= lengths:
-            if (length := self[1](s[lengths:], full=False)) is not None:
-                lengths += length
-                return lengths if not full or len(s) == lengths else None
+    def __call__(self, string, full=True, _string=None, _success=None):
+        if not isinstance(string, Iterable):
+            raise ValueError('input must be an iterable')
+        string = iter(string)
 
+        # Reconstruction of string returned back to invocation.
+        _string = {} if _string is None else _string
+        _success = {} if _success is None else _success
+
+        lengths = self[0](string, full=False, _string=_string, _success=_success)
+        if lengths is not None:
+            string = _success[()] if () in _success and _success[()] is not None else string
+            _string_ = {}
+            length = self[1](string, full=False, _string=_string_, _success=_success)
+            if length is not None:
+                string = _success[()] if () in _success and _success[()] is not None else string
+                lengths += length
+
+                if not full:
+                    _success[()] = string
+                    return lengths
+                else:
+                    _string__ = {}
+                    result = emp()(string, full=True, _string=_string__)
+                    if result == 0:
+                        _success[()] = string
+                        return lengths
+                    string = chain(_string__[()], string) # Restore string if above check failed.
+
+            # Restore consumed symbols to string and fail.
+            _string[()] = chain(_string[()], chain(_string_[()], string))
+            _success[()] = None
+            return None # String does not satisfy the regular expression.
+
+        # Restore consumed symbols to string and fail.
+        _string[()] = chain(_string[()], string)
+        _success[()] = None
         return None # String does not satisfy the regular expression.
 
 class alt(are):
@@ -82,21 +169,102 @@ class alt(are):
     (1, 1, None)
     >>> r('ac', full=False)
     1
+    >>> r = con(alt(lit('a'), lit('b')), lit('c'))
+    >>> (r('ac'), r('bc'), r('c'), r('a'), r('b'))
+    (2, 2, None, None, None)
+    >>> r = con(alt(lit('a'), lit('b')), alt(lit('c'), lit('d')))
+    >>> (r('ac'), r('ad'), r('bc'), r('bd'))
+    (2, 2, 2, 2)
+    >>> r0 = alt(lit('a'), alt(lit('b'), lit('c')))
+    >>> r1 = con(r0, r0)
+    >>> {r1(x + y) for x in 'abc' for y in 'abc'}
+    {2}
+    >>> r = alt(con(lit('a'), lit('a')), lit('a'))
+    >>> r('aa')
+    2
+    >>> r = alt(con(lit('a'), lit('a')), con(lit('a'), con(lit('a'), lit('a'))))
+    >>> (r('aaa'), r('aa'))
+    (3, 2)
     """
     def __new__(cls, *arguments):
         return super().__new__(cls, [*arguments])
 
-    def __call__(self, s, full=True):
-        lengths = [self[0](s, full=full)]
-        if lengths[-1] is None:
-            return self[1](s, full=full)
+    def __call__(self, string, full=True, _string=None, _success=None):
+        if not isinstance(string, Iterable):
+            raise ValueError('input must be an iterable')
+        string = iter(string)
 
-        lengths.append(self[1](s, full=full))
-        if lengths[-1] is None:
-            return lengths[0]
+        # Reconstruction of string returned back to invocation.
+        _string = {} if _string is None else _string
+        _success = {} if _success is None else _success
 
-        length = max(lengths)
-        return length if not full or len(s) == length else None
+        lengths = [self[0](string, full=full, _string=_string, _success=_success)]
+        if lengths[-1] is None:
+            string = chain(_string[()], string)
+            return self[1](string, full=full, _string=_string, _success=_success)
+
+        string = chain(_string[()], string)
+        _string_ = {}
+        _success_ = {}
+        lengths.append(self[1](string, full=full, _string=_string_, _success=_success_))
+        if lengths[1] is None:
+            if lengths[0] is None:
+                _string[()] = chain(_string_[()], string)
+                _success[()] = None
+                return None
+            else:
+                length = lengths[0]
+                if not full:
+                    _string[()] = chain(_string_[()], string)
+                    _success[()] = _success[()]
+                    return length
+                else:
+                    string = _success[()] if () in _success and _success[()] is not None else string
+                    _string__ = {}
+                    result = emp()(string, full=True, _string=_string__)
+                    if result == 0:
+                        _string[()] = chain(_string_[()], chain(_string__[()], string))
+                        _success[()] = chain(_string__[()], string)
+                        return length
+                     # Restore string if above check failed.
+                    _string[()] = chain(_string_[()], chain(_string__[()], string))
+                    _success[()] = None
+                    return None
+        else:
+            if lengths[0] is None or lengths[0] < lengths[1]:
+                length = lengths[1]
+                if not full:
+                    _string[()] = chain(_string_[()], string)
+                    _success[()] = _success_[()]
+                    return length
+                else:
+                    _string__ = {}
+                    result = emp()(string, full=True, _string=_string__)
+                    if result == 0:
+                        _string[()] = chain(_string_[()], chain(_string__[()], string))
+                        _success[()] = chain(_string__[()], string)
+                        return length
+                     # Restore string if above check failed.
+                    _string[()] = chain(_string_[()], chain(_string__[()], string))
+                    _success[()] = None 
+                    return None
+            else:
+                length = lengths[0]
+                if not full:
+                    _string[()] = chain(_string_[()], string)
+                    _success[()] = _success[()]
+                    return length
+                else:
+                    _string__ = {}
+                    result = emp()(string, full=True, _string=_string__)
+                    if result == 0:
+                        _string[()] = chain(_string_[()], chain(_string__[()], string))
+                        _success[()] = chain(_string__[()], string)
+                        return length
+                     # Restore string if above check failed.
+                    _string[()] = chain(_string_[()], chain(_string__[()], string))
+                    _success[()] = None 
+                    return None
 
 class rep(are):
     """
@@ -110,18 +278,53 @@ class rep(are):
     True
     >>> {r('a'*i + 'b') for i in range(10)}
     {None}
+    >>> r = con(lit('a'), rep(lit('b')))
+    >>> r('a' + 'b'*10)
+    11
+    >>> r = con(rep(lit('a')), lit('b'))
+    >>> r('aaab')
+    4
     """
     def __new__(cls, argument):
         return super().__new__(cls, [argument])
 
-    def __call__(self, s, full=True):
-        lengths = 0
-        length = self[0](s, full=False)
-        while length is not None and len(s) >= lengths:
-            lengths += length
-            length = self[0](s[lengths:], full=False)
+    def __call__(self, string, full=True, _string=None, _success=None):
+        if not isinstance(string, Iterable):
+            raise ValueError('input must be an iterable')
+        string = iter(string)
 
-        return lengths if not full or len(s) == lengths else None
+        # Reconstruction of string returned back to invocation.
+        _string = {} if _string is None else _string
+        _success = {} if _success is None else _success
+
+        _strings = []
+        _strings.append({})
+        lengths = 0
+        length = self[0](string, full=False, _string=_strings[-1])
+        while length is not None:
+            _strings.append({})
+            lengths += length
+            length = self[0](string, full=False, _string=_strings[-1])
+
+        # Restore after last attempt.
+        string = chain(_strings[-1][()], string)
+        _strings.pop()
+
+        if not full:
+            _string[()] = chain(*([s[()] for s in _strings] + [string]))
+            _success[()] = string
+            return lengths
+        else:
+            _string__ = {}
+            result = emp()(string, full=True, _string=_string__)
+            if result == 0:
+                _string[()] = chain(*([s[()] for s in _strings] + [string]))
+                _success[()] = string
+                return lengths
+            # Restore string if above check failed.
+            string = chain(_string__[()], string)
+            _string[()] = chain(*([s[()] for s in _strings] + [string]))
+            return None
 
 if __name__ == "__main__":
     doctest.testmod()
