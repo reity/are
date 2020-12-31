@@ -4,7 +4,7 @@ are
 
 Library for defining and working with regular expressions (treated as abstract mathematical objects) that support strings/sequences with elements of any symbol type.
 
-|pypi| |travis|
+|pypi| |travis| |coveralls|
 
 .. |pypi| image:: https://badge.fury.io/py/are.svg
    :target: https://badge.fury.io/py/are
@@ -12,6 +12,9 @@ Library for defining and working with regular expressions (treated as abstract m
 
 .. |travis| image:: https://travis-ci.com/reity/are.svg?branch=master
    :target: https://travis-ci.com/reity/are
+
+.. |coveralls| image:: https://coveralls.io/repos/github/reity/are/badge.svg?branch=master
+   :target: https://coveralls.io/github/reity/are?branch=master
 
 Package Installation and Usage
 ------------------------------
