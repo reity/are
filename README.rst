@@ -2,7 +2,7 @@
 are
 ===
 
-Library for defining and working with regular expressions (treated as abstract mathematical objects) that support strings/sequences with elements of any symbol type.
+Library for defining and working with abstract regular expressions that support strings/sequences with elements of any symbol type, with an emphasis on supporting scenarios in which it is necessary to work with regular expressions as abstract mathematical objects.
 
 |pypi| |travis| |coveralls|
 

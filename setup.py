@@ -12,8 +12,8 @@ setup(
     url="https://github.com/reity/are",
     author="Andrei Lapets",
     author_email="a@lapets.io",
-    description="Library for defining and using abstract regular " +\
-                "expression instances for other symbol types.",
+    description="Library for defining and working with abstract " +\
+                "regular expressions that work with any symbol type.",
     long_description=long_description,
     long_description_content_type="text/x-rst",
     test_suite="nose.collector",

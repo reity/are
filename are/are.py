@@ -1,7 +1,9 @@
 """Abstract regular expressions.
 
-Library for working with regular expressions as abstract
-mathematical objects.
+Library for defining and working with abstract regular
+expressions that work with any symbol type, with an emphasis
+on supporting scenarios in which it is necessary to work with
+regular expressions as abstract mathematical objects.
 """
 
 from __future__ import annotations
