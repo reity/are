@@ -4,11 +4,14 @@ are
 
 Library for defining and working with regular expressions (treated as abstract mathematical objects) that support strings/sequences with elements of any symbol type.
 
-|pypi|
+|pypi| |travis|
 
 .. |pypi| image:: https://badge.fury.io/py/are.svg
    :target: https://badge.fury.io/py/are
    :alt: PyPI version and link.
+
+.. |travis| image:: https://travis-ci.com/reity/are.svg?branch=master
+   :target: https://travis-ci.com/reity/are
 
 Package Installation and Usage
 ------------------------------
