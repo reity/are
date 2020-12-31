@@ -132,11 +132,12 @@ class con(are):
 
         lengths = self[0](string, full=False, _string=_string, _success=_success)
         if lengths is not None:
-            string = _success[()] if () in _success and _success[()] is not None else string
+            string = _success[()]
             _string_ = {}
-            length = self[1](string, full=False, _string=_string_, _success=_success)
+            _success_ = {}
+            length = self[1](string, full=False, _string=_string_, _success=_success_)
             if length is not None:
-                string = _success[()] if () in _success and _success[()] is not None else string
+                string = _success_[()]
                 lengths += length
 
                 if not full:
@@ -207,64 +208,33 @@ class alt(are):
         _string_ = {}
         _success_ = {}
         lengths.append(self[1](string, full=full, _string=_string_, _success=_success_))
+
+        # The cases where `lengths [0] is None` are handled by the recursive call on line 246.
         if lengths[1] is None:
-            if lengths[0] is None:
+            length = lengths[0]
+            if not full:
                 _string[()] = chain(_string_[()], string)
-                _success[()] = None
-                return None
+                _success[()] = _success[()]
+                return length
             else:
-                length = lengths[0]
-                if not full:
-                    _string[()] = chain(_string_[()], string)
-                    _success[()] = _success[()]
-                    return length
-                else:
-                    string = _success[()] if () in _success and _success[()] is not None else string
-                    _string__ = {}
-                    result = emp()(string, full=True, _string=_string__)
-                    if result == 0:
-                        _string[()] = chain(_string_[()], chain(_string__[()], string))
-                        _success[()] = chain(_string__[()], string)
-                        return length
-                     # Restore string if above check failed.
-                    _string[()] = chain(_string_[()], chain(_string__[()], string))
-                    _success[()] = None
-                    return None
-        else:
-            if lengths[0] is None or lengths[0] < lengths[1]:
-                length = lengths[1]
-                if not full:
-                    _string[()] = chain(_string_[()], string)
-                    _success[()] = _success_[()]
-                    return length
-                else:
-                    _string__ = {}
-                    result = emp()(string, full=True, _string=_string__)
-                    if result == 0:
-                        _string[()] = chain(_string_[()], chain(_string__[()], string))
-                        _success[()] = chain(_string__[()], string)
-                        return length
-                     # Restore string if above check failed.
-                    _string[()] = chain(_string_[()], chain(_string__[()], string))
-                    _success[()] = None 
-                    return None
+                string = _success[()]
+                _string__ = {}
+                result = emp()(string, full=True, _string=_string__)
+                _string[()] = chain(_string_[()], chain(_string__[()], string))
+                _success[()] = chain(_string__[()], string) if result == 0 else None
+                return length if result == 0 else None
+        else: # Both succeeded (all other cases handled in recursive call on line 246).
+            if not full:
+                _string[()] = chain(_string_[()], string)
+                _success[()] = _success[()] if lengths[0] > lengths[1] else _success_[()]
+                return max(lengths)
             else:
-                length = lengths[0]
-                if not full:
-                    _string[()] = chain(_string_[()], string)
-                    _success[()] = _success[()]
-                    return length
-                else:
-                    _string__ = {}
-                    result = emp()(string, full=True, _string=_string__)
-                    if result == 0:
-                        _string[()] = chain(_string_[()], chain(_string__[()], string))
-                        _success[()] = chain(_string__[()], string)
-                        return length
-                     # Restore string if above check failed.
-                    _string[()] = chain(_string_[()], chain(_string__[()], string))
-                    _success[()] = None 
-                    return None
+                string = _success[()] if lengths[0] > lengths[1] else _success_[()]
+                _string__ = {}
+                result = emp()(string, full=True, _string=_string__)            
+                _string[()] = chain(_string_[()], chain(_string__[()], string))   
+                _success[()] = chain(_string__[()], string) if result == 0 else None            
+                return max(lengths) if result == 0 else None
 
 class rep(are):
     """
