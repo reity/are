@@ -21,6 +21,10 @@ class emp(are):
     Regular expression that only matches an empty
     string (i.e., a string with length zero).
 
+    >>> emp()(123)
+    Traceback (most recent call last):
+      ...
+    ValueError: input must be an iterable
     >>> (emp()(""), emp()("ab"))
     (0, None)
     >>> emp()("abc", full=False)
@@ -63,6 +67,10 @@ class lit(are):
     (None, 1, None)
     >>> (lit("a")("", full=False), lit("a")("ab", full=False))
     (None, 1)
+    >>> lit("a")(123)
+    Traceback (most recent call last):
+      ...
+    ValueError: input must be an iterable
     """
     def __new__(cls, argument):
         return super().__new__(cls, [argument])
@@ -117,6 +125,10 @@ class con(are):
     >>> r = con(con(lit('a'), lit('b')), lit('c'))
     >>> r('abc')
     3
+    >>> r(123)
+    Traceback (most recent call last):
+      ...
+    ValueError: input must be an iterable
     """
     def __new__(cls, *arguments):
         return super().__new__(cls, [*arguments])
@@ -165,7 +177,24 @@ class alt(are):
     """
     Alternation operation node for two regular expressions.
 
+    >>> r = alt(con(lit('a'), lit('b')), lit('a'))
+    >>> r('abc', full=False)
+    2
+    >>> r = alt(lit('a'), con(lit('a'), lit('a')))
+    >>> r('aaa', full=False)
+    2
+    >>> r = alt(lit('a'), con(lit('a'), lit('a')))
+    >>> r('aaa') is None
+    True
+    >>> r = alt(con(lit('a'), lit('a')), lit('a'))
+    >>> r('aa', full=False)
+    2
+    >>> r = alt(lit('a'), lit('a'))
+    >>> r('a')
+    1
     >>> r = alt(lit('a'), lit('b'))
+    >>> r('ac') is None
+    True
     >>> (r('a'), r('b'), r('c'))
     (1, 1, None)
     >>> r('ac', full=False)
@@ -183,9 +212,22 @@ class alt(are):
     >>> r = alt(con(lit('a'), lit('a')), lit('a'))
     >>> r('aa')
     2
+    >>> r = alt(lit('b'), con(lit('a'), lit('a')))
+    >>> r('aa')
+    2
+    >>> r = alt(lit('b'), con(lit('c'), lit('a')))
+    >>> r('aab') is None
+    True
     >>> r = alt(con(lit('a'), lit('a')), con(lit('a'), con(lit('a'), lit('a'))))
     >>> (r('aaa'), r('aa'))
     (3, 2)
+    >>> r = alt(con(lit('a'), lit('a')), con(lit('a'), con(lit('a'), lit('a'))))
+    >>> (r('aaa', full=False), r('aa', full=False))
+    (2, 2)
+    >>> r(123)
+    Traceback (most recent call last):
+      ...
+    ValueError: input must be an iterable
     """
     def __new__(cls, *arguments):
         return super().__new__(cls, [*arguments])
@@ -231,9 +273,9 @@ class alt(are):
             else:
                 string = _success[()] if lengths[0] > lengths[1] else _success_[()]
                 _string__ = {}
-                result = emp()(string, full=True, _string=_string__)            
-                _string[()] = chain(_string_[()], chain(_string__[()], string))   
-                _success[()] = chain(_string__[()], string) if result == 0 else None            
+                result = emp()(string, full=True, _string=_string__)
+                _string[()] = chain(_string_[()], chain(_string__[()], string))
+                _success[()] = chain(_string__[()], string) if result == 0 else None
                 return max(lengths) if result == 0 else None
 
 class rep(are):
@@ -242,6 +284,10 @@ class rep(are):
     regular expression.
 
     >>> r = rep(lit('a'))
+    >>> r(123)
+    Traceback (most recent call last):
+      ...
+    ValueError: input must be an iterable
     >>> all([r('a'*i) == i for i in range(100)])
     True
     >>> all([r('a'*i + 'b', full=False) == i for i in range(100)])
@@ -297,4 +343,4 @@ class rep(are):
             return None
 
 if __name__ == "__main__":
-    doctest.testmod()
+    doctest.testmod() # pragma: no cover
