@@ -8,19 +8,23 @@ regular expressions as abstract mathematical objects.
 
 from __future__ import annotations
 import doctest
+from typing import Optional
 from collections.abc import Iterable
 from reiter import reiter
 from nfa import nfa, epsilon
 
-class are(tuple):
+class are(tuple): # pylint: disable=E1101
     """
     Base class for abstract regular expression instances
     (and nodes of the tree data structure that represents
     abstract regular expression instances).
     """
-    def compile(self: nfa, _nfa=None):
+    def compile(self: nfa, _nfa: nfa = None) -> nfa:
+        """
+        Build equivalent NFA for more efficient matching.
+        """
         _nfa = nfa() if _nfa is None else _nfa
-    
+
         if isinstance(self, emp):
             self._compiled = _nfa
         elif isinstance(self, lit):
@@ -40,6 +44,16 @@ class are(tuple):
         self._compiled.compile()
 
         return self
+
+    def __call__(self: are, string, full: bool = True, _index: int = 0) -> Optional[int]:
+        if not isinstance(string, (Iterable, reiter)):
+            raise ValueError('input must be an iterable')
+        string = reiter(string)
+
+        if hasattr(self, "_compiled") and self._compiled is not None:
+            return self._compiled(string)
+
+        return self._match(string, full, _index) # pylint: disable=E1101
 
 class emp(are):
     """
@@ -65,16 +79,10 @@ class emp(are):
     def __new__(cls):
         return super().__new__(cls)
 
-    def __call__(self, string, full=True, _index=0):
-        if not isinstance(string, (Iterable, reiter)):
-            raise ValueError('input must be an iterable')
-        string = reiter(string)
-
-        if hasattr(self, "_compiled") and self._compiled is not None:
-            return self._compiled(string)
-
+    # pylint: disable=R0201
+    def _match(self: are, string, full: bool, _index: int) -> Optional[int]:
         try:
-            symbol = string[_index]
+            symbol = string[_index] # pylint: disable=W0612
             if not full:
                 return 0
             else:
@@ -104,14 +112,7 @@ class lit(are):
     def __new__(cls, argument):
         return super().__new__(cls, [argument])
 
-    def __call__(self, string, full=True, _index=0):
-        if not isinstance(string, (Iterable, reiter)):
-            raise ValueError('input must be an iterable')
-        string = reiter(string)
-
-        if hasattr(self, "_compiled") and self._compiled is not None:
-            return self._compiled(string)
-
+    def _match(self: are, string, full: bool, _index: int) -> Optional[int]:
         try:
             symbol = string[_index]
 
@@ -162,14 +163,7 @@ class con(are):
     def __new__(cls, *arguments):
         return super().__new__(cls, [*arguments])
 
-    def __call__(self, string, full=True, _index=0):
-        if not isinstance(string, (Iterable, reiter)):
-            raise ValueError('input must be an iterable')
-        string = reiter(string)
-
-        if hasattr(self, "_compiled") and self._compiled is not None:
-            return self._compiled(string)
-
+    def _match(self: are, string, full: bool, _index: int) -> Optional[int]:
         lengths = self[0](string, full=False, _index=_index)
 
         if lengths is not None:
@@ -253,14 +247,7 @@ class alt(are):
     def __new__(cls, *arguments):
         return super().__new__(cls, [*arguments])
 
-    def __call__(self, string, full=True, _index=0):
-        if not isinstance(string, (Iterable, reiter)):
-            raise ValueError('input must be an iterable')
-        string = reiter(string)
-
-        if hasattr(self, "_compiled") and self._compiled is not None:
-            return self._compiled(string)
-
+    def _match(self: are, string, full: bool, _index: int) -> Optional[int]:
         lengths = [self[0](string, full=full, _index=_index)]
         if lengths[-1] is None:
             return self[1](string, full=full, _index=_index)
@@ -323,14 +310,7 @@ class rep(are):
     def __new__(cls, argument):
         return super().__new__(cls, [argument])
 
-    def __call__(self, string, full=True, _index=0):
-        if not isinstance(string, (Iterable, reiter)):
-            raise ValueError('input must be an iterable')
-        string = reiter(string)
-
-        if hasattr(self, "_compiled") and self._compiled is not None:
-            return self._compiled(string)
-
+    def _match(self: are, string, full: bool, _index: int) -> Optional[int]:
         lengths = 0
         length = self[0](string, full=False, _index=_index)
         while length is not None:
