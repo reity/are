@@ -10,6 +10,7 @@ from __future__ import annotations
 import doctest
 from collections.abc import Iterable
 from reiter import reiter
+from nfa import nfa, epsilon
 
 class are(tuple):
     """
@@ -17,6 +18,28 @@ class are(tuple):
     (and nodes of the tree data structure that represents
     abstract regular expression instances).
     """
+    def compile(self: nfa, _nfa=None):
+        _nfa = nfa() if _nfa is None else _nfa
+    
+        if isinstance(self, emp):
+            self._compiled = _nfa
+        elif isinstance(self, lit):
+            self._compiled = nfa({self[0]: _nfa})
+        elif isinstance(self, con):
+            self._compiled = self[0].compile(self[1].compile(_nfa)._compiled)._compiled
+        elif isinstance(self, alt):
+            self._compiled = nfa({epsilon: [
+                self[0].compile(_nfa)._compiled,
+                self[1].compile(_nfa)._compiled
+            ]})
+        elif isinstance(self, rep):
+            self._compiled = nfa({epsilon: [_nfa]})
+            self._compiled[epsilon].append(self[0].compile(self._compiled)._compiled)
+
+        # Compile the NFA itself (converting it into a transition table, internally).
+        self._compiled.compile()
+
+        return self
 
 class emp(are):
     """
@@ -35,6 +58,9 @@ class emp(are):
     0
     >>> emp()(iter("abc"), full=False)
     0
+    >>> r = emp().compile()
+    >>> (r(""), r("abc"))
+    (0, None)
     """
     def __new__(cls):
         return super().__new__(cls)
@@ -43,6 +69,9 @@ class emp(are):
         if not isinstance(string, (Iterable, reiter)):
             raise ValueError('input must be an iterable')
         string = reiter(string)
+
+        if hasattr(self, "_compiled") and self._compiled is not None:
+            return self._compiled(string)
 
         try:
             symbol = string[_index]
@@ -68,6 +97,9 @@ class lit(are):
     Traceback (most recent call last):
       ...
     ValueError: input must be an iterable
+    >>> r = lit("a").compile()
+    >>> (r("a"), r(""))
+    (1, None)
     """
     def __new__(cls, argument):
         return super().__new__(cls, [argument])
@@ -76,6 +108,9 @@ class lit(are):
         if not isinstance(string, (Iterable, reiter)):
             raise ValueError('input must be an iterable')
         string = reiter(string)
+
+        if hasattr(self, "_compiled") and self._compiled is not None:
+            return self._compiled(string)
 
         try:
             symbol = string[_index]
@@ -120,6 +155,9 @@ class con(are):
     Traceback (most recent call last):
       ...
     ValueError: input must be an iterable
+    >>> r = (con(lit('a'), lit('b'))).compile()
+    >>> (r('ab'), r('a'), r('abc'), r('cd'))
+    (2, None, None, None)
     """
     def __new__(cls, *arguments):
         return super().__new__(cls, [*arguments])
@@ -128,6 +166,9 @@ class con(are):
         if not isinstance(string, (Iterable, reiter)):
             raise ValueError('input must be an iterable')
         string = reiter(string)
+
+        if hasattr(self, "_compiled") and self._compiled is not None:
+            return self._compiled(string)
 
         lengths = self[0](string, full=False, _index=_index)
 
@@ -204,6 +245,10 @@ class alt(are):
     Traceback (most recent call last):
       ...
     ValueError: input must be an iterable
+    >>> r = alt(con(lit('a'), lit('a')), con(lit('a'), con(lit('a'), lit('a'))))
+    >>> r = r.compile()
+    >>> (r('aaa'), r('aa'), r('a'))
+    (3, 2, None)
     """
     def __new__(cls, *arguments):
         return super().__new__(cls, [*arguments])
@@ -212,6 +257,9 @@ class alt(are):
         if not isinstance(string, (Iterable, reiter)):
             raise ValueError('input must be an iterable')
         string = reiter(string)
+
+        if hasattr(self, "_compiled") and self._compiled is not None:
+            return self._compiled(string)
 
         lengths = [self[0](string, full=full, _index=_index)]
         if lengths[-1] is None:
@@ -265,6 +313,12 @@ class rep(are):
     4
     >>> r(iter('aaab'))
     4
+    >>> r = con(rep(lit('a')), lit('b')).compile()
+    >>> r('aaab')
+    4
+    >>> r = rep(lit('a')).compile()
+    >>> all([r('a'*i) == i for i in range(100)])
+    True
     """
     def __new__(cls, argument):
         return super().__new__(cls, [argument])
@@ -273,6 +327,9 @@ class rep(are):
         if not isinstance(string, (Iterable, reiter)):
             raise ValueError('input must be an iterable')
         string = reiter(string)
+
+        if hasattr(self, "_compiled") and self._compiled is not None:
+            return self._compiled(string)
 
         lengths = 0
         length = self[0](string, full=False, _index=_index)

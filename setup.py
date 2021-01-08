@@ -7,7 +7,7 @@ setup(
     name="are",
     version="0.2.0",
     packages=["are",],
-    install_requires=["reiter",],
+    install_requires=["reiter", "nfa",],
     license="MIT",
     url="https://github.com/reity/are",
     author="Andrei Lapets",
