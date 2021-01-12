@@ -10,11 +10,11 @@ Library for defining and working with abstract regular expressions that support 
    :target: https://badge.fury.io/py/are
    :alt: PyPI version and link.
 
-.. |travis| image:: https://travis-ci.com/reity/are.svg?branch=master
+.. |travis| image:: https://travis-ci.com/reity/are.svg?branch=main
    :target: https://travis-ci.com/reity/are
 
-.. |coveralls| image:: https://coveralls.io/repos/github/reity/are/badge.svg?branch=master
-   :target: https://coveralls.io/github/reity/are?branch=master
+.. |coveralls| image:: https://coveralls.io/repos/github/reity/are/badge.svg?branch=main
+   :target: https://coveralls.io/github/reity/are?branch=main
 
 Package Installation and Usage
 ------------------------------
