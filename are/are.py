@@ -46,14 +46,21 @@ class are(tuple): # pylint: disable=E1101
         return self
 
     def __call__(self: are, string, full: bool = True, _index: int = 0) -> Optional[int]:
+        """
+        Determine whether a sequence of symbols (i.e., an abstract string)
+        is in the language defined by this regular expression instance.
+        """
         if not isinstance(string, (Iterable, reiter)):
             raise ValueError('input must be an iterable')
         string = reiter(string)
 
         if hasattr(self, "_compiled") and self._compiled is not None:
-            return self._compiled(string)
+            return self._compiled(string, full=full)
 
-        return self._match(string, full, _index) # pylint: disable=E1101
+        # If there is no match but a full match is not required,
+        # return a successful match of length zero.
+        match = self._match(string, full, _index) # pylint: disable=E1101
+        return match if full else (0 if match is None else match)
 
 class emp(are):
     """
@@ -98,7 +105,7 @@ class lit(are):
     >>> (lit("a")(""), lit("a")("a"), lit("a")("ab"))
     (None, 1, None)
     >>> (lit("a")("", full=False), lit("a")("ab", full=False))
-    (None, 1)
+    (0, 1)
     >>> lit("a")(iter("ab"), full=False)
     1
     >>> lit("a")(123)
@@ -120,7 +127,7 @@ class lit(are):
                 if not full:
                     return 1
                 else:
-                    result = emp()(string, full=True, _index=(_index + 1))
+                    result = emp()._match(string, full=True, _index=(_index + 1))
                     if result == 0:
                         return 1
 
@@ -139,9 +146,9 @@ class con(are):
     >>> (r(iter('ab')), r(iter('a')), r(iter('abc')), r(iter('cd')))
     (2, None, None, None)
     >>> (r('a', full=False), r('abc', full=False), r('cd', full=False))
-    (None, 2, None)
+    (0, 2, 0)
     >>> (r(iter('a'), full=False), r(iter('abc'), full=False), r(iter('cd'), full=False))
-    (None, 2, None)
+    (0, 2, 0)
     >>> r = con(lit('a'), con(lit('b'), lit('c')))
     >>> (r('abc'), r('abcd', full=False), r('ab'))
     (3, 3, None)
@@ -164,17 +171,17 @@ class con(are):
         return super().__new__(cls, [*arguments])
 
     def _match(self: are, string, full: bool, _index: int) -> Optional[int]:
-        lengths = self[0](string, full=False, _index=_index)
+        lengths = self[0]._match(string, full=False, _index=_index)
 
         if lengths is not None:
-            length = self[1](string, full=False, _index=(_index + lengths))
+            length = self[1]._match(string, full=False, _index=(_index + lengths))
             if length is not None:
                 lengths += length
 
                 if not full:
                     return lengths
                 else:
-                    result = emp()(string, full=True, _index=(_index + lengths))
+                    result = emp()._match(string, full=True, _index=(_index + lengths))
                     if result == 0:
                         return lengths
 
@@ -248,11 +255,11 @@ class alt(are):
         return super().__new__(cls, [*arguments])
 
     def _match(self: are, string, full: bool, _index: int) -> Optional[int]:
-        lengths = [self[0](string, full=full, _index=_index)]
+        lengths = [self[0]._match(string, full=full, _index=_index)]
         if lengths[-1] is None:
-            return self[1](string, full=full, _index=_index)
+            return self[1]._match(string, full=full, _index=_index)
 
-        lengths.append(self[1](string, full=full, _index=_index))
+        lengths.append(self[1]._match(string, full=full, _index=_index))
 
         # The cases where `lengths [0] is None` are handled by the recursive call on line 226.
         if lengths[1] is None:
@@ -260,14 +267,14 @@ class alt(are):
             if not full:
                 return length
             else:
-                result = emp()(string, full=True, _index=(_index + length))
+                result = emp()._match(string, full=True, _index=(_index + length))
                 return length if result == 0 else None
         else: # Both succeeded (all other cases handled in recursive call on line 226).
             if not full:
                 return max(lengths)
             else:
                 length = max(lengths)
-                result = emp()(string, full=True, _index=(_index + length))
+                result = emp()._match(string, full=True, _index=(_index + length))
                 return length if result == 0 else None
 
 class rep(are):
@@ -312,15 +319,15 @@ class rep(are):
 
     def _match(self: are, string, full: bool, _index: int) -> Optional[int]:
         lengths = 0
-        length = self[0](string, full=False, _index=_index)
+        length = self[0]._match(string, full=False, _index=_index)
         while length is not None:
             lengths += length
-            length = self[0](string, full=False, _index=(_index + lengths))
+            length = self[0]._match(string, full=False, _index=(_index + lengths))
 
         if not full:
             return lengths
         else:
-            result = emp()(string, full=True, _index=(_index + lengths))
+            result = emp()._match(string, full=True, _index=(_index + lengths))
             if result == 0:
                 return lengths
 
