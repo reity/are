@@ -50,6 +50,33 @@ class are(tuple): # pylint: disable=E1101
         self._compiled = _compiled.compile()
         return self
 
+    def to_re(self: are) -> str:
+        """
+        Build equivalent regular expression string that is compatible
+        with the built-in `re` module.
+
+        >>> rep(alt(con(lit('a'), lit('b')), emp())).to_re()
+        '((((a)(b))|)*)'
+        >>> rep(alt(con(lit(123), lit(456)), emp())).to_re()
+        Traceback (most recent call last):
+          ...
+        TypeError: all symbols must be strings
+        """
+        if isinstance(self, emp):
+            re_ = ''
+        elif isinstance(self, lit):
+            if not isinstance(self[0], str):
+                raise TypeError('all symbols must be strings')
+            re_ = '(' + self[0] + ')'
+        elif isinstance(self, con):
+            re_ = '(' + self[0].to_re() + self[1].to_re() + ')'
+        elif isinstance(self, alt):
+            re_ = '(' + self[0].to_re() + '|' + self[1].to_re() + ')'
+        elif isinstance(self, rep):
+            re_ = '(' + self[0].to_re() + '*)'
+
+        return re_
+
     def __call__(self: are, string, full: bool = True, _index: int = 0) -> Optional[int]:
         """
         Determine whether a sequence of symbols (i.e., an abstract string)
@@ -66,6 +93,23 @@ class are(tuple): # pylint: disable=E1101
         # return a successful match of length zero.
         match = self._match(string, full, _index) # pylint: disable=E1101
         return match if full else (0 if match is None else match)
+
+    def __str__(self):
+        """
+        Return string representation of instance.
+        """
+        return\
+            type(self).__name__ +\
+            (str(tuple(self)) if len(self) != 1 else str(tuple(self))[:-2] + ')')
+
+    def __repr__(self):
+        """
+        Return string representation of instance.
+
+        >>> rep(alt(con(lit('a'), lit('b')), emp()))
+        rep(alt(con(lit('a'), lit('b')), emp()))
+        """
+        return str(self)
 
 class emp(are):
     """
