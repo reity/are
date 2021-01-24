@@ -23,26 +23,31 @@ class are(tuple): # pylint: disable=E1101
         """
         Build equivalent NFA for more efficient matching.
         """
-        _nfa = nfa() if _nfa is None else _nfa
+        _compiled = None
+        _nfa_ = nfa() if _nfa is None else _nfa
 
         if isinstance(self, emp):
-            self._compiled = _nfa
+            _compiled = _nfa_
         elif isinstance(self, lit):
-            self._compiled = nfa({self[0]: _nfa})
+            _compiled = nfa({self[0]: _nfa_})
         elif isinstance(self, con):
-            self._compiled = self[0].compile(self[1].compile(_nfa)._compiled)._compiled
+            _compiled = self[0].compile(self[1].compile(_nfa_))
         elif isinstance(self, alt):
-            self._compiled = nfa({epsilon: [
-                self[0].compile(_nfa)._compiled,
-                self[1].compile(_nfa)._compiled
+            _compiled = nfa({epsilon: [
+                self[0].compile(_nfa_),
+                self[1].compile(_nfa_)
             ]})
         elif isinstance(self, rep):
-            self._compiled = nfa({epsilon: [_nfa]})
-            self._compiled[epsilon].append(self[0].compile(self._compiled)._compiled)
+            _compiled = nfa({epsilon: [_nfa_]})
+            _compiled[epsilon].append(self[0].compile(_compiled))
 
-        # Compile the NFA itself (converting it into a transition table, internally).
-        self._compiled.compile()
+        # This is not the root invocation, so return the compiled NFA.
+        if _nfa is not None:
+            return _compiled
 
+        # This is the root invocation, save the NFA (compiling it to a transition table)
+        # and return the original abstract regular expression instance.
+        self._compiled = _compiled.compile()
         return self
 
     def __call__(self: are, string, full: bool = True, _index: int = 0) -> Optional[int]:
@@ -163,7 +168,7 @@ class con(are):
     Traceback (most recent call last):
       ...
     ValueError: input must be an iterable
-    >>> r = (con(lit('a'), lit('b'))).compile()
+    >>> r = con(lit('a'), lit('b')).compile()
     >>> (r('ab'), r('a'), r('abc'), r('cd'))
     (2, None, None, None)
     """
