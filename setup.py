@@ -5,7 +5,7 @@ with open("README.rst", "r") as fh:
 
 setup(
     name="are",
-    version="0.2.0",
+    version="1.0.0",
     packages=["are",],
     install_requires=["reiter", "nfa",],
     license="MIT",
