@@ -11,7 +11,7 @@ def api_methods():
     """
     API symbols that should be available to users upon module import.
     """
-    return {'are', 'emp', 'lit', 'con', 'alt', 'rep'}
+    return {'are', 'nul', 'emp', 'lit', 'con', 'alt', 'rep'}
 
 class Test_namespace(TestCase):
     """
@@ -36,7 +36,7 @@ def ares(alphabet):
     Yield a sample of all abstract regular expression instances for the supplied
     alphabet of symbols.
     """
-    rs = [emp()] + [lit(s) for s in alphabet]
+    rs = [nul(), emp()] + [lit(s) for s in alphabet]
     while True:
         rs = sample(rs, min(len(rs), 3))
         for (op, arity) in ((con, 2), (alt, 2), (rep, 1)):

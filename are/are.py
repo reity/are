@@ -24,24 +24,37 @@ class are(tuple): # pylint: disable=E1101
         Build equivalent NFA from the abstract regular expression instance.
         """
         _nfa_ = None
-        _nfa = nfa() if _nfa is None else _nfa
+        _nfa_next = nfa() if _nfa is None else _nfa
 
-        if isinstance(self, emp):
-            _nfa_ = _nfa
+        if isinstance(self, nul):
+            _nfa_ = None
+        elif isinstance(self, emp):
+            _nfa_ = _nfa_next
         elif isinstance(self, lit):
-            _nfa_ = nfa({self[0]: _nfa})
+            _nfa_ = nfa({self[0]: _nfa_next})
         elif isinstance(self, con):
-            _nfa_ = self[0].to_nfa(self[1].to_nfa(_nfa))
+            _nfa_rhs = self[1].to_nfa(_nfa_next)
+            _nfa_ = None if _nfa_rhs is None else self[0].to_nfa(_nfa_rhs)
         elif isinstance(self, alt):
-            _nfa_ = nfa({epsilon: [
-                self[0].to_nfa(_nfa),
-                self[1].to_nfa(_nfa)
-            ]})
+            _nfa_lhs = self[0].to_nfa(_nfa_next)
+            _nfa_rhs = self[1].to_nfa(_nfa_next)
+            if _nfa_lhs is not None and _nfa_rhs is not None:
+                _nfa_ = nfa({epsilon: [_nfa_lhs, _nfa_rhs]})
+            elif _nfa_lhs is not None:
+                _nfa_ = _nfa_lhs
+            elif _nfa_rhs is not None:
+                _nfa_ = _nfa_rhs
+            else:
+                _nfa_ = None
         elif isinstance(self, rep):
-            _nfa_ = nfa({epsilon: [_nfa]})
-            _nfa_[epsilon].append(self[0].to_nfa(_nfa_))
+            _nfa_ = nfa({epsilon: [_nfa_next]})
+            _nfa_arg = self[0].to_nfa(_nfa_)
+            if _nfa_arg is not None:
+                _nfa_[epsilon].append(_nfa_arg)
 
-        return _nfa_
+        # In the root invocation, `None` implies that the NFA instance should
+        # reject all strings. Otherwise, return the assembled NFA instance.
+        return -nfa() if (_nfa_ is None and _nfa is None) else _nfa_
 
     def compile(self: are) -> are:
         """
@@ -59,11 +72,15 @@ class are(tuple): # pylint: disable=E1101
 
         >>> rep(alt(con(lit('a'), lit('b')), emp())).to_re()
         '((((a)(b))|)*)'
+        >>> rep(alt(con(lit('a'), con(lit('b'), nul())), emp())).to_re()
+        '((((a)((b)[^\\\\w\\\\W]))|)*)'
         >>> rep(alt(con(lit(123), lit(456)), emp())).to_re()
         Traceback (most recent call last):
           ...
         TypeError: all symbols must be strings
         """
+        if isinstance(self, nul):
+            re_ = r'[^\w\W]' # Contradiction.
         if isinstance(self, emp):
             re_ = ''
         elif isinstance(self, lit):
@@ -113,6 +130,46 @@ class are(tuple): # pylint: disable=E1101
         rep(alt(con(lit('a'), lit('b')), emp()))
         """
         return str(self)
+
+class nul(are):
+    """
+    Regular expression that matches no strings.
+
+    >>> nul()(123)
+    Traceback (most recent call last):
+      ...
+    ValueError: input must be an iterable
+    >>> r = nul()
+    >>> (r(""), r("abc"), r("", full=False), r("abc", full=False))
+    (None, None, None, None)
+    >>> r = r.compile()
+    >>> (r(""), r("abc"), r("", full=False), r("abc", full=False))
+    (None, None, None, None)
+    >>> (nul()(iter("ab")), nul()(iter("abc"), full=False))
+    (None, None)
+    >>> ((con(nul(), lit('a')))('a'), (con(nul(), lit('a'))).compile()('a'))
+    (None, None)
+    >>> ((con(lit('a'), nul()))('a'), (con(lit('a'), nul())).compile()('a'))
+    (None, None)
+    >>> ((alt(nul(), lit('a')))('a'), (alt(nul(), lit('a'))).compile()('a'))
+    (1, 1)
+    >>> ((alt(lit('a'), nul()))('a'), (alt(lit('a'), nul())).compile()('a'))
+    (1, 1)
+    >>> ((alt(nul(), nul()))('a'), (alt(nul(), nul())).compile()('a'))
+    (None, None)
+    >>> (con(rep(nul()), lit('a')).compile())('a')
+    1
+    """
+    def __new__(cls):
+        return super().__new__(cls)
+
+    # pylint: disable=R0201,W0613
+    def _match(self: are, string, full: bool, _index: int):
+        try:
+            symbol = string[_index] # pylint: disable=W0612
+            return None
+        except (StopIteration, IndexError):
+            return None
 
 class emp(are):
     """
