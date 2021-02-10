@@ -45,8 +45,8 @@ class are(tuple): # pylint: disable=E1101
         if _nfa is not None:
             return _compiled
 
-        # This is the root invocation, save the NFA (compiling it to a transition table)
-        # and return the original abstract regular expression instance.
+        # This is the root invocation; save the NFA (compiling it to a transition
+        # table) and return the original abstract regular expression instance.
         self._compiled = _compiled.compile()
         return self
 
@@ -86,12 +86,17 @@ class are(tuple): # pylint: disable=E1101
             raise ValueError('input must be an iterable')
         string = reiter(string)
 
-        if hasattr(self, "_compiled") and self._compiled is not None:
-            return self._compiled(string, full=full)
+        # Determine the length of the longest match either using the compiled
+        # NFA (if it is present) or the instance itself.
+        # pylint: disable=E1101
+        match = (
+            self._compiled(string, full=full) \
+            if hasattr(self, "_compiled") and self._compiled is not None else \
+            self._match(string, full, _index)
+        )
 
         # If there is no match but a full match is not required,
         # return a successful match of length zero.
-        match = self._match(string, full, _index) # pylint: disable=E1101
         return match if full else (0 if match is None else match)
 
     def __str__(self):

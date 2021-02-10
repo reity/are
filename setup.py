@@ -5,9 +5,9 @@ with open("README.rst", "r") as fh:
 
 setup(
     name="are",
-    version="1.0.0",
+    version="2.0.0",
     packages=["are",],
-    install_requires=["reiter", "nfa",],
+    install_requires=["reiter~=0.2", "nfa~=3.0",],
     license="MIT",
     url="https://github.com/reity/are",
     author="Andrei Lapets",
