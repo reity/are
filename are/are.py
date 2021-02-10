@@ -89,15 +89,11 @@ class are(tuple): # pylint: disable=E1101
         # Determine the length of the longest match either using the compiled
         # NFA (if it is present) or the instance itself.
         # pylint: disable=E1101
-        match = (
+        return (
             self._compiled(string, full=full) \
             if hasattr(self, "_compiled") and self._compiled is not None else \
             self._match(string, full, _index)
         )
-
-        # If there is no match but a full match is not required,
-        # return a successful match of length zero.
-        return match if full else (0 if match is None else match)
 
     def __str__(self):
         """
@@ -159,7 +155,7 @@ class lit(are):
     >>> (lit("a")(""), lit("a")("a"), lit("a")("ab"))
     (None, 1, None)
     >>> (lit("a")("", full=False), lit("a")("ab", full=False))
-    (0, 1)
+    (None, 1)
     >>> lit("a")(iter("ab"), full=False)
     1
     >>> lit("a")(123)
@@ -200,9 +196,9 @@ class con(are):
     >>> (r(iter('ab')), r(iter('a')), r(iter('abc')), r(iter('cd')))
     (2, None, None, None)
     >>> (r('a', full=False), r('abc', full=False), r('cd', full=False))
-    (0, 2, 0)
+    (None, 2, None)
     >>> (r(iter('a'), full=False), r(iter('abc'), full=False), r(iter('cd'), full=False))
-    (0, 2, 0)
+    (None, 2, None)
     >>> r = con(lit('a'), con(lit('b'), lit('c')))
     >>> (r('abc'), r('abcd', full=False), r('ab'))
     (3, 3, None)
