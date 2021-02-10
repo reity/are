@@ -19,35 +19,37 @@ class are(tuple): # pylint: disable=E1101
     (and nodes of the tree data structure that represents
     abstract regular expression instances).
     """
-    def compile(self: nfa, _nfa: nfa = None) -> nfa:
+    def to_nfa(self: are, _nfa: nfa = None) -> nfa:
         """
-        Build equivalent NFA for more efficient matching.
+        Build equivalent NFA from the abstract regular expression instance.
         """
-        _compiled = None
-        _nfa_ = nfa() if _nfa is None else _nfa
+        _nfa_ = None
+        _nfa = nfa() if _nfa is None else _nfa
 
         if isinstance(self, emp):
-            _compiled = _nfa_
+            _nfa_ = _nfa
         elif isinstance(self, lit):
-            _compiled = nfa({self[0]: _nfa_})
+            _nfa_ = nfa({self[0]: _nfa})
         elif isinstance(self, con):
-            _compiled = self[0].compile(self[1].compile(_nfa_))
+            _nfa_ = self[0].to_nfa(self[1].to_nfa(_nfa))
         elif isinstance(self, alt):
-            _compiled = nfa({epsilon: [
-                self[0].compile(_nfa_),
-                self[1].compile(_nfa_)
+            _nfa_ = nfa({epsilon: [
+                self[0].to_nfa(_nfa),
+                self[1].to_nfa(_nfa)
             ]})
         elif isinstance(self, rep):
-            _compiled = nfa({epsilon: [_nfa_]})
-            _compiled[epsilon].append(self[0].compile(_compiled))
+            _nfa_ = nfa({epsilon: [_nfa]})
+            _nfa_[epsilon].append(self[0].to_nfa(_nfa_))
 
-        # This is not the root invocation, so return the compiled NFA.
-        if _nfa is not None:
-            return _compiled
+        return _nfa_
 
-        # This is the root invocation; save the NFA (compiling it to a transition
-        # table) and return the original abstract regular expression instance.
-        self._compiled = _compiled.compile()
+    def compile(self: are) -> are:
+        """
+        Build equivalent NFA and store it internally as an attribute
+        for more efficient matching, returning the original abstract
+        regular expression instance.
+        """
+        self._compiled = self.to_nfa().compile() # Compile NFA into transition table.
         return self
 
     def to_re(self: are) -> str:

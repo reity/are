@@ -1,6 +1,7 @@
 from importlib import import_module
 from itertools import product, islice
 from random import sample
+from nfa import nfa, epsilon
 import re
 from unittest import TestCase
 
@@ -95,3 +96,12 @@ class Test_are(TestCase):
             r_re = re.compile(r.to_re())
             sms_r_re = set((s, longest(r_re, s)) for (s, _) in sms_r)
             self.assertEqual(sms_r, sms_r_re)
+
+    def test_are_to_nfa(self):
+        for r in islice(ares(['a', 'b']), 0, 100):
+            for full in (False, True):
+                ss = list(strs(['a', 'b'], 5))
+                sms_r = set((s, m) for s in ss for m in [r(s, full)])
+                r_to_nfa = r.to_nfa()
+                sms_r_to_nfa = set((s, m) for s in ss for m in [r_to_nfa(s, full)])
+                self.assertEqual(sms_r, sms_r_to_nfa)
