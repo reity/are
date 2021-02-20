@@ -15,13 +15,24 @@ from nfa import nfa, epsilon
 
 class are(tuple): # pylint: disable=E1101
     """
-    Base class for abstract regular expression instances
-    (and nodes of the tree data structure that represents
-    abstract regular expression instances).
+    Base class for abstract regular expression instances (and the individual
+    nodes found within an abstract syntax tree instance). Abstract regular
+    expressions can contain symbols of any immutable type and can be built up
+    using common operators such as concatenation, alternation, and repetition.
+
+    >>> a = con(lit(1), con(lit(2), lit(3)))
+    >>> a([1, 2, 3])
+    3
     """
     def to_nfa(self: are, _nfa: nfa = None) -> nfa:
         """
-        Build equivalent NFA from the abstract regular expression instance.
+        Convert this abstract regular expression instance into a nondeterministic
+        finite automaton that accepts the set of iterables that satisfies this
+        instance.
+
+        >>> a = con(lit(1), con(lit(2), lit(3)))
+        >>> a.to_nfa()
+        nfa({1: nfa({2: nfa({3: nfa()})})})
         """
         _nfa_ = None
         _nfa_next = nfa() if _nfa is None else _nfa
@@ -58,22 +69,34 @@ class are(tuple): # pylint: disable=E1101
 
     def compile(self: are) -> are:
         """
-        Build equivalent NFA and store it internally as an attribute
-        for more efficient matching, returning the original abstract
+        Convert this instance to an equivalent NFA and store it internally as an
+        attribute to enable more efficient matching; return the original abstract
         regular expression instance.
+
+        >>> a = alt(lit('x'), rep(con(lit('y'), lit('z'))))
+        >>> a = a.compile()
+        >>> a(['x'])
+        1
+        >>> a(['y', 'z', 'y', 'z'])
+        4
         """
         self._compiled = self.to_nfa().compile() # Compile NFA into transition table.
         return self
 
     def to_re(self: are) -> str:
         """
-        Build equivalent regular expression string that is compatible
+        If this instance has string symbols (and no other symbols of any other type),
+        convert it to an equivalent regular expression string that is compatible
         with the built-in `re` module.
 
         >>> rep(alt(con(lit('a'), lit('b')), emp())).to_re()
         '((((a)(b))|)*)'
         >>> rep(alt(con(lit('a'), con(lit('b'), nul())), emp())).to_re()
         '((((a)((b)[^\\\\w\\\\W]))|)*)'
+
+        Any attempt to convert an instance that has non-string symbols raises an
+        exception.
+
         >>> rep(alt(con(lit(123), lit(456)), emp())).to_re()
         Traceback (most recent call last):
           ...
@@ -98,8 +121,25 @@ class are(tuple): # pylint: disable=E1101
 
     def __call__(self: are, string, full: bool = True, _index: int = 0) -> Optional[int]:
         """
-        Determine whether a sequence of symbols (i.e., an abstract string)
-        is in the language defined by this regular expression instance.
+        Determine whether an iterable of symbols (*i.e.*, an abstract string)
+        is in the language defined by this instance.
+
+        >>> a = rep(con(lit(1), lit(2)))
+        >>> a([1, 2, 1, 2, 1, 2])
+        6
+        >>> a = alt(rep(lit(2)), rep(lit(3)))
+        >>> a([2, 2, 2, 2, 2])
+        5
+        >>> a([3, 3, 3, 3])
+        4
+
+        Any attempt to apply an abstract regular expression instance to a
+        non-iterable raises an exception.
+
+        >>> nul()(123)
+        Traceback (most recent call last):
+          ...
+        ValueError: input must be an iterable
         """
         if not isinstance(string, (Iterable, reiter)):
             raise ValueError('input must be an iterable')
@@ -117,6 +157,9 @@ class are(tuple): # pylint: disable=E1101
     def __str__(self):
         """
         Return string representation of instance.
+
+        >>> rep(con(lit(1), alt(lit(2), lit(3))))
+        rep(con(lit(1), alt(lit(2), lit(3))))
         """
         return\
             type(self).__name__ +\
@@ -133,20 +176,22 @@ class are(tuple): # pylint: disable=E1101
 
 class nul(are):
     """
-    Regular expression that matches no strings.
+    Singleton class containing an object that corresponds to the sole
+    abstract regular expression instance that cannot be satisfied by any
+    iterable (*i.e.*, that cannot be satisfied by any abstract string).
 
-    >>> nul()(123)
-    Traceback (most recent call last):
-      ...
-    ValueError: input must be an iterable
+    >>> (nul()(iter("ab")), nul()(iter("abc"), full=False))
+    (None, None)
     >>> r = nul()
     >>> (r(""), r("abc"), r("", full=False), r("abc", full=False))
     (None, None, None, None)
+
+    More usage examples involving compilation of instances are presented
+    below.
+
     >>> r = r.compile()
     >>> (r(""), r("abc"), r("", full=False), r("abc", full=False))
     (None, None, None, None)
-    >>> (nul()(iter("ab")), nul()(iter("abc"), full=False))
-    (None, None)
     >>> ((con(nul(), lit('a')))('a'), (con(nul(), lit('a'))).compile()('a'))
     (None, None)
     >>> ((con(lit('a'), nul()))('a'), (con(lit('a'), nul())).compile()('a'))
@@ -159,6 +204,14 @@ class nul(are):
     (None, None)
     >>> (con(rep(nul()), lit('a')).compile())('a')
     1
+
+    Any attempt to apply an abstract regular expression instance to a
+    non-iterable raises an exception.
+
+    >>> nul()(123)
+    Traceback (most recent call last):
+      ...
+    ValueError: input must be an iterable
     """
     def __new__(cls):
         return super().__new__(cls)
@@ -173,13 +226,10 @@ class nul(are):
 
 class emp(are):
     """
-    Regular expression that only matches an empty
-    string (i.e., a string with length zero).
+    Singleton class containing an object that corresponds to the sole
+    abstract regular expression instance that is satisfied only by an
+    empty iterable (*i.e.*, an abstract string with a length of zero).
 
-    >>> emp()(123)
-    Traceback (most recent call last):
-      ...
-    ValueError: input must be an iterable
     >>> (emp()(""), emp()("ab"))
     (0, None)
     >>> emp()(iter("ab")) is None
@@ -191,6 +241,14 @@ class emp(are):
     >>> r = emp().compile()
     >>> (r(""), r("abc"))
     (0, None)
+
+    Any attempt to apply an abstract regular expression instance to a
+    non-iterable raises an exception.
+
+    >>> emp()(123)
+    Traceback (most recent call last):
+      ...
+    ValueError: input must be an iterable
     """
     def __new__(cls):
         return super().__new__(cls)
@@ -208,8 +266,9 @@ class emp(are):
 
 class lit(are):
     """
-    Literal node (individual symbol as a base case) of a regular
-    expression instance.
+    Abstract regular expression instances that are satisfied by exactly
+    one symbol. Instances of this class also serve as the leaf nodes
+    (*i.e.*, base cases) corresponding to literals.
 
     >>> (lit("a")(""), lit("a")("a"), lit("a")("ab"))
     (None, 1, None)
@@ -217,13 +276,17 @@ class lit(are):
     (None, 1)
     >>> lit("a")(iter("ab"), full=False)
     1
+    >>> r = lit("a").compile()
+    >>> (r("a"), r(""))
+    (1, None)
+
+    Any attempt to apply an abstract regular expression instance to a
+    non-iterable raises an exception.
+
     >>> lit("a")(123)
     Traceback (most recent call last):
       ...
     ValueError: input must be an iterable
-    >>> r = lit("a").compile()
-    >>> (r("a"), r(""))
-    (1, None)
     """
     def __new__(cls, argument):
         return super().__new__(cls, [argument])
@@ -247,7 +310,9 @@ class lit(are):
 
 class con(are):
     """
-    Concatenation operation node for two regular expressions.
+    Concatenation operation for two abstract regular expression instances.
+    Instances of this class also serve as the internal nodes of the tree
+    data structure representing an abstract regular expression.
 
     >>> r = con(lit('a'), lit('b'))
     >>> (r('ab'), r('a'), r('abc'), r('cd'))
@@ -268,13 +333,17 @@ class con(are):
     3
     >>> r(iter('abc'))
     3
+    >>> r = con(lit('a'), lit('b')).compile()
+    >>> (r('ab'), r('a'), r('abc'), r('cd'))
+    (2, None, None, None)
+
+    Any attempt to apply an abstract regular expression instance to a
+    non-iterable raises an exception.
+
     >>> r(123)
     Traceback (most recent call last):
       ...
     ValueError: input must be an iterable
-    >>> r = con(lit('a'), lit('b')).compile()
-    >>> (r('ab'), r('a'), r('abc'), r('cd'))
-    (2, None, None, None)
     """
     def __new__(cls, *arguments):
         return super().__new__(cls, [*arguments])
@@ -298,8 +367,22 @@ class con(are):
 
 class alt(are):
     """
-    Alternation operation node for two regular expressions.
+    Alternation operation for two abstract regular expression instances.
+    Instances of this class also serve as the internal nodes of the tree
+    data structure representing an abstract regular expression.
 
+    >>> r = alt(con(lit('a'), lit('a')), lit('a'))
+    >>> r('aa')
+    2
+    >>> r = alt(lit('b'), con(lit('a'), lit('a')))
+    >>> r('aa')
+    2
+    >>> r = con(alt(lit('a'), lit('b')), alt(lit('c'), lit('d')))
+    >>> (r('ac'), r('ad'), r('bc'), r('bd'))
+    (2, 2, 2, 2)
+    >>> r = con(alt(lit('a'), lit('b')), lit('c'))
+    >>> (r('ac'), r('bc'), r('c'), r('a'), r('b'))
+    (2, 2, None, None, None)
     >>> r = alt(con(lit('a'), lit('b')), lit('a'))
     >>> r('abc', full=False)
     2
@@ -322,22 +405,10 @@ class alt(are):
     (1, 1, None)
     >>> r('ac', full=False)
     1
-    >>> r = con(alt(lit('a'), lit('b')), lit('c'))
-    >>> (r('ac'), r('bc'), r('c'), r('a'), r('b'))
-    (2, 2, None, None, None)
-    >>> r = con(alt(lit('a'), lit('b')), alt(lit('c'), lit('d')))
-    >>> (r('ac'), r('ad'), r('bc'), r('bd'))
-    (2, 2, 2, 2)
     >>> r0 = alt(lit('a'), alt(lit('b'), lit('c')))
     >>> r1 = con(r0, r0)
     >>> {r1(x + y) for x in 'abc' for y in 'abc'}
     {2}
-    >>> r = alt(con(lit('a'), lit('a')), lit('a'))
-    >>> r('aa')
-    2
-    >>> r = alt(lit('b'), con(lit('a'), lit('a')))
-    >>> r('aa')
-    2
     >>> r = alt(lit('b'), con(lit('c'), lit('a')))
     >>> r('aab') is None
     True
@@ -351,14 +422,18 @@ class alt(are):
     (3, 2)
     >>> (r(iter('aaa'), full=False), r(iter('aa'), full=False))
     (3, 2)
-    >>> r(123)
-    Traceback (most recent call last):
-      ...
-    ValueError: input must be an iterable
     >>> r = alt(con(lit('a'), lit('a')), con(lit('a'), con(lit('a'), lit('a'))))
     >>> r = r.compile()
     >>> (r('aaa'), r('aa'), r('a'))
     (3, 2, None)
+
+    Any attempt to apply an abstract regular expression instance to a
+    non-iterable raises an exception.
+
+    >>> r(123)
+    Traceback (most recent call last):
+      ...
+    ValueError: input must be an iterable
     """
     def __new__(cls, *arguments):
         return super().__new__(cls, [*arguments])
@@ -388,14 +463,12 @@ class alt(are):
 
 class rep(are):
     """
-    Repetition operation node (zero or more times) for a
+    Repetition operation (zero or more times) for two abstract regular
+    expression instances. Instances of this class also serve as the
+    internal nodes of the tree data structure representing an abstract
     regular expression.
 
     >>> r = rep(lit('a'))
-    >>> r(123)
-    Traceback (most recent call last):
-      ...
-    ValueError: input must be an iterable
     >>> all([r('a'*i) == i for i in range(100)])
     True
     >>> all([r('a'*i + 'b', full=False) == i for i in range(100)])
@@ -422,6 +495,14 @@ class rep(are):
     >>> r = rep(lit('a')).compile()
     >>> all([r('a'*i) == i for i in range(100)])
     True
+
+    Any attempt to apply an abstract regular expression instance to a
+    non-iterable raises an exception.
+
+    >>> r(123)
+    Traceback (most recent call last):
+      ...
+    ValueError: input must be an iterable
     """
     def __new__(cls, argument):
         return super().__new__(cls, [argument])
