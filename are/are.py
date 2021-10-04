@@ -1,11 +1,8 @@
-"""Abstract regular expressions.
-
-Library for defining and working with abstract regular
-expressions that work with any symbol type, with an emphasis
-on supporting scenarios in which it is necessary to work with
-regular expressions as abstract mathematical objects.
 """
-
+Library for defining and operating on abstract regular expressions that work
+with any symbol type, with an emphasis on supporting scenarios in which it is
+necessary to work with regular expressions as abstract mathematical objects.
+"""
 from __future__ import annotations
 import doctest
 from typing import Optional
@@ -23,11 +20,21 @@ class are(tuple): # pylint: disable=E1101
     >>> a = con(lit(1), con(lit(2), lit(3)))
     >>> a([1, 2, 3])
     3
+
+    This class is derived from the built-in :class:`tuple <tuple>` type.
+    Each instance of this class acts as a node within the abstract syntax tree
+    representing an abstract regular expression. The elements inside the instance
+    are the child nodes of the node represented by the instance and can be
+    accessed in the usual manner supported by the :class:`tuple <tuple>` type.
+
+    >>> a = con(lit(1), con(lit(2), lit(3)))
+    >>> a[1]
+    con(lit(2), lit(3))
     """
     def to_nfa(self: are, _nfa: nfa = None) -> nfa:
         """
         Convert this abstract regular expression instance into a nondeterministic
-        finite automaton that accepts the set of iterables that satisfies this
+        finite automaton (NFA) that accepts the set of iterables that satisfies this
         instance.
 
         >>> a = con(lit(1), con(lit(2), lit(3)))
@@ -69,8 +76,8 @@ class are(tuple): # pylint: disable=E1101
 
     def compile(self: are) -> are:
         """
-        Convert this instance to an equivalent NFA and store it internally as an
-        attribute to enable more efficient matching; return the original abstract
+        Convert this instance into an equivalent NFA and store it internally as an
+        attribute (to enable more efficient matching). Return the original abstract
         regular expression instance.
 
         >>> a = alt(lit('x'), rep(con(lit('y'), lit('z'))))
@@ -87,7 +94,7 @@ class are(tuple): # pylint: disable=E1101
         """
         If this instance has string symbols (and no other symbols of any other type),
         convert it to an equivalent regular expression string that is compatible
-        with the built-in `re` module.
+        with the built-in :obj:`re <re>` module.
 
         >>> rep(alt(con(lit('a'), lit('b')), emp())).to_re()
         '((((a)(b))|)*)'
@@ -121,8 +128,11 @@ class are(tuple): # pylint: disable=E1101
 
     def __call__(self: are, string, full: bool = True, _index: int = 0) -> Optional[int]:
         """
-        Determine whether an iterable of symbols (*i.e.*, an abstract string)
-        is in the language defined by this instance.
+        Determine whether an iterable of symbols (*i.e.*, an abstract *string*
+        in the formal sense associated with the mathematical definition of a
+        regular expression) is in the formal language represented by this instance.
+        By default, the length of the abstract string is returned if the abstract
+        string satisfies this instance.
 
         >>> a = rep(con(lit(1), lit(2)))
         >>> a([1, 2, 1, 2, 1, 2])
@@ -132,6 +142,32 @@ class are(tuple): # pylint: disable=E1101
         5
         >>> a([3, 3, 3, 3])
         4
+
+        If the supplied abstract string does not satisfy this instance, then ``None``
+        is returned.
+        
+        >>> a([1, 1, 1]) is None
+        True
+
+        If the optional parameter ``full`` is set to ``False``, then the length of
+        the longest prefix of the abstract string that satisfies this instance is
+        returned. If no prefix satisfies this instance, then ``None`` is returned.
+
+        >>> a = con(lit(1), con(lit(2), lit(3)))
+        >>> a([1, 2, 3, 4, 5], full=False)
+        3
+        >>> a = con(lit(1), con(lit(2), lit(3)))
+        >>> a([4, 4, 4], full=False) is None
+        True
+
+        If an instance is satisfied by the empty abstract string and ``full`` is set
+        to ``False``, then the empty prefix of any abstract string satisfies the
+        abstract regular expression instance (and, thus, a successful integer result
+        of ``0`` is returned in such cases).
+
+        >>> a = alt(lit(2), emp()) # Satisfied by the empty abstract string.
+        >>> a([1, 1, 1], full=False) # Empty string is a prefix of ``[1, 1, 1]``.
+        0
 
         Any attempt to apply an abstract regular expression instance to a
         non-iterable raises an exception.
@@ -154,18 +190,29 @@ class are(tuple): # pylint: disable=E1101
             self._match(string, full, _index)
         )
 
-    def __str__(self):
+    def __str__(self: are) -> str:
         """
         Return string representation of instance.
 
-        >>> rep(con(lit(1), alt(lit(2), lit(3))))
+        >>> a = rep(con(lit(1), alt(lit(2), lit(3))))
+        >>> str(a)
+        'rep(con(lit(1), alt(lit(2), lit(3))))'
+
+        Assuming that this module has been imported in a manner such that the
+        :obj:`are` subclasses are associated with the variables as they appear
+        in this module (*e.g.*, :obj:`con` is associated with the variable ``con``
+        in the relevant scope), the strings returned by this method can be evaluated
+        to reconstruct the instance.
+
+        >>> a = rep(con(lit(1), alt(lit(2), lit(3))))
+        >>> eval(str(a))
         rep(con(lit(1), alt(lit(2), lit(3))))
         """
         return\
             type(self).__name__ +\
             (str(tuple(self)) if len(self) != 1 else str(tuple(self))[:-2] + ')')
 
-    def __repr__(self):
+    def __repr__(self: are) -> str:
         """
         Return string representation of instance.
 
@@ -186,8 +233,8 @@ class nul(are):
     >>> (r(""), r("abc"), r("", full=False), r("abc", full=False))
     (None, None, None, None)
 
-    More usage examples involving compilation of instances are presented
-    below.
+    More usage examples involving compilation of :obj:`are` instances
+    that contain instances of this class are presented below.
 
     >>> r = r.compile()
     >>> (r(""), r("abc"), r("", full=False), r("abc", full=False))
@@ -266,9 +313,10 @@ class emp(are):
 
 class lit(are):
     """
-    Abstract regular expression instances that are satisfied by exactly
-    one symbol. Instances of this class also serve as the leaf nodes
-    (*i.e.*, base cases) corresponding to literals.
+    Abstract regular expression instances that are satisfied by exactly one
+    symbol. Instances of this class also serve as the leaf nodes (*i.e.*, base
+    cases) corresponding to abstract string *literals* (in the formal sense
+    associated with the mathematical definition of a regular expression).
 
     >>> (lit("a")(""), lit("a")("a"), lit("a")("ab"))
     (None, 1, None)
@@ -310,9 +358,9 @@ class lit(are):
 
 class con(are):
     """
-    Concatenation operation for two abstract regular expression instances.
-    Instances of this class also serve as the internal nodes of the tree
-    data structure representing an abstract regular expression.
+    Concatenation operation for two :obj:`are` instances. Instances of this
+    class also serve as the internal nodes of the tree data structure
+    representing an abstract regular expression.
 
     >>> r = con(lit('a'), lit('b'))
     >>> (r('ab'), r('a'), r('abc'), r('cd'))
@@ -367,9 +415,9 @@ class con(are):
 
 class alt(are):
     """
-    Alternation operation for two abstract regular expression instances.
-    Instances of this class also serve as the internal nodes of the tree
-    data structure representing an abstract regular expression.
+    Alternation operation for two :obj:`are` instances. Instances of this
+    class also serve as the internal nodes of the tree data structure
+    representing an abstract regular expression.
 
     >>> r = alt(con(lit('a'), lit('a')), lit('a'))
     >>> r('aa')
@@ -463,17 +511,12 @@ class alt(are):
 
 class rep(are):
     """
-    Repetition operation (zero or more times) for two abstract regular
-    expression instances. Instances of this class also serve as the
-    internal nodes of the tree data structure representing an abstract
-    regular expression.
+    Repetition operation (zero or more times) for an :obj:`are` instance.
+    Instances of this class also serve as the internal nodes of the tree data
+    structure representing an abstract regular expression.
 
     >>> r = rep(lit('a'))
     >>> all([r('a'*i) == i for i in range(100)])
-    True
-    >>> all([r('a'*i + 'b', full=False) == i for i in range(100)])
-    True
-    >>> all([r(iter('a'*i + 'b'), full=False) == i for i in range(100)])
     True
     >>> {r('a'*i + 'b') for i in range(10)}
     {None}
@@ -494,6 +537,17 @@ class rep(are):
     4
     >>> r = rep(lit('a')).compile()
     >>> all([r('a'*i) == i for i in range(100)])
+    True
+
+    Note that the empty abstract string satisfies any instance of this class.
+
+    >>> r("")
+    0
+    >>> r("bbbb", full=False)
+    0
+    >>> all([r('a'*i + 'b', full=False) == i for i in range(100)])
+    True
+    >>> all([r(iter('a'*i + 'b'), full=False) == i for i in range(100)])
     True
 
     Any attempt to apply an abstract regular expression instance to a

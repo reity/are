@@ -53,7 +53,8 @@ autodoc_default_options = {
     'exclude-members': ','.join([
         '__weakref__',
         '__module__',
-        '__dict__'
+        '__dict__',
+        '__new__'
     ])
 }
 
