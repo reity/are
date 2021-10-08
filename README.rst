@@ -4,17 +4,23 @@ are
 
 Library for defining and working with abstract regular expressions that support strings/sequences with elements of any symbol type, with an emphasis on supporting scenarios in which it is necessary to work with regular expressions as abstract mathematical objects.
 
-|pypi| |travis| |coveralls|
+|pypi| |readthedocs| |travis| |coveralls|
 
 .. |pypi| image:: https://badge.fury.io/py/are.svg
    :target: https://badge.fury.io/py/are
    :alt: PyPI version and link.
 
+.. |readthedocs| image:: https://readthedocs.org/projects/are/badge/?version=latest
+   :target: https://are.readthedocs.io/en/latest/?badge=latest
+   :alt: Read the Docs documentation status.
+
 .. |travis| image:: https://travis-ci.com/reity/are.svg?branch=main
    :target: https://travis-ci.com/reity/are
+   :alt: Travis CI build status.
 
 .. |coveralls| image:: https://coveralls.io/repos/github/reity/are/badge.svg?branch=main
    :target: https://coveralls.io/github/reity/are?branch=main
+   :alt: Coveralls test coverage summary
 
 Purpose
 -------
