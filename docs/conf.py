@@ -17,13 +17,15 @@ sys.path.insert(0, os.path.abspath('..'))
 
 # -- Project information -----------------------------------------------------
 
-project = 'are'
-copyright = '2020, Reity LLC' # Period omitted; precedes punctuation.
-author = 'Reity LLC'
-
-# The version number is retrieved from `setup.py` in the root directory.
-version = open('../setup.py').read().split('version = "')[1].split('"')[0]
+# The name and version are retrieved from `setup.py` in the root directory.
+with open('../setup.py') as package_file:
+    package = package_file.read()
+project = package.split('name = "')[1].split('"')[0]
+version = package.split('version = "')[1].split('"')[0]
 release = version
+
+author = 'Reity LLC'
+copyright = '2020, Reity LLC' # Period omitted; precedes punctuation.
 
 
 # -- General configuration ---------------------------------------------------
@@ -57,6 +59,7 @@ autodoc_default_options = {
         '__new__'
     ])
 }
+autodoc_preserve_defaults = True
 
 # Allow references to classes defined in the Python documentation.
 intersphinx_mapping = {'python': ('https://docs.python.org/3', None)}

@@ -3,13 +3,14 @@ from setuptools import setup
 with open("README.rst", "r") as fh:
     long_description = fh.read().replace(".. include:: toc.rst\n\n", "")
 
-# The line below is parsed by `docs/conf.py`.
+# The lines below can be parsed by `docs/conf.py`.
+name = "are"
 version = "2.0.0"
 
 setup(
-    name="are",
+    name=name,
     version=version,
-    packages=["are",],
+    packages=[name,],
     install_requires=["reiter~=0.2", "nfa~=3.0",],
     license="MIT",
     url="https://github.com/reity/are",
