@@ -145,7 +145,7 @@ class are(tuple): # pylint: disable=E1101
 
         If the supplied abstract string does not satisfy this instance, then ``None``
         is returned.
-        
+
         >>> a([1, 1, 1]) is None
         True
 

@@ -1,11 +1,15 @@
+"""
+Test suite in which functional unit tests for matching, compilation, and
+conversion methods are applied to a sample of a bounded subset of all
+possible data structure instances.
+"""
 from importlib import import_module
 from itertools import product, islice
 from random import sample
-from nfa import nfa, epsilon
 import re
-from unittest import TestCase
+from unittest import TestCase # pylint: disable=C0411
 
-from are.are import *
+from are.are import * # pylint: disable=W0401,W0614
 
 def api_methods():
     """
@@ -16,9 +20,12 @@ def api_methods():
 class Test_namespace(TestCase):
     """
     Check that the exported namespace provide access to the expected
-    classes and functions.
+    classes and subclasses.
     """
     def test_module(self):
+        """
+        Check namespace against reference list of classes.
+        """
         module = import_module('are.are')
         self.assertTrue(api_methods().issubset(module.__dict__.keys()))
 
@@ -60,19 +67,33 @@ def longest(re_r, s):
     )
 
 class Test_are(TestCase):
+    """
+    Functional unit tests for the abstract regular expression class, its
+    subclasses, and their methods.
+    """
     def test_are(self):
+        """
+        Tests of matching method.
+        """
         for r in islice(ares(['a', 'b']), 0, 100):
             for s in strs(['a', 'b'], 5):
                 match = r(s)
                 self.assertTrue((isinstance(match, int) and match == len(s)) or match is None)
 
     def test_are_full_false(self):
+        """
+        Tests of matching method when matching a prefix of the string is permitted.
+        """
         for r in islice(ares(['a', 'b']), 0, 100):
             for s in strs(['a', 'b'], 5):
                 match = r(s, full=False)
                 self.assertTrue((isinstance(match, int) and match <= len(s)) or match is None)
 
     def test_are_compile(self):
+        """
+        Tests of compilation method that converts an instance to an NFA, with
+        confirmation that matching behavior is preserved.
+        """
         for r in islice(ares(['a', 'b']), 0, 100):
             for full in (False, True):
                 ss = list(strs(['a', 'b'], 5))
@@ -82,6 +103,9 @@ class Test_are(TestCase):
                 self.assertEqual(sms_r, sms_r_compiled)
 
     def test_are_to_re(self):
+        """
+        Tests of method that converts to built-in Python regular expressions.
+        """
         for r in islice(ares(['a', 'b']), 0, 100):
             ss = list(strs(['a', 'b'], 5))
             ss_r = set(s for s in ss if r(s) is not None)
@@ -90,6 +114,10 @@ class Test_are(TestCase):
             self.assertEqual(ss_r, ss_r_re)
 
     def test_are_to_re_not_full(self):
+        """
+        Tests of method that converts to built-in Python regular expressions,
+        with comparison of partial matching behaviors between the two.
+        """
         for r in islice(ares(['a', 'b']), 0, 100):
             ss = list(strs(['a', 'b'], 5))
             sms_r = set((s, m) for s in ss for m in [r(s, False)] if m is not None)
@@ -98,6 +126,11 @@ class Test_are(TestCase):
             self.assertEqual(sms_r, sms_r_re)
 
     def test_are_to_nfa(self):
+        """
+        Tests of conversion to an NFA, with comparison between matching as
+        implemented in the abstract regular expression data structure and
+        matching as implemented in the NFA data structure.
+        """
         for r in islice(ares(['a', 'b']), 0, 100):
             for full in (False, True):
                 ss = list(strs(['a', 'b'], 5))
