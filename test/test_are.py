@@ -7,9 +7,9 @@ from importlib import import_module
 from itertools import product, islice
 from random import sample
 import re
-from unittest import TestCase # pylint: disable=C0411
+from unittest import TestCase
 
-from are.are import * # pylint: disable=W0401,W0614
+from are.are import are, nul, emp, lit, con, alt, rep
 
 def api_methods():
     """
@@ -31,7 +31,7 @@ class Test_namespace(TestCase):
 
 def strs(alphabet, k):
     """
-    Yield all strings of length at most `k` containing
+    Yield all strings of length at most ``k`` containing
     only the characters in the supplied alphabet of symbols.
     """
     for i in range(k):
@@ -40,8 +40,8 @@ def strs(alphabet, k):
 
 def ares(alphabet):
     """
-    Yield a sample of all abstract regular expression instances for the supplied
-    alphabet of symbols.
+    Yield a sample of all abstract regular expression instances
+    for the supplied alphabet of symbols.
     """
     rs = [nul(), emp()] + [lit(s) for s in alphabet]
     while True:
@@ -55,7 +55,7 @@ def ares(alphabet):
 def longest(re_r, s):
     """
     Find the length of the longest prefix substring that matches a
-    regular expression compiled using the `re` module.
+    regular expression compiled using the ``re`` module.
     """
     return max(
         (

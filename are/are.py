@@ -10,7 +10,7 @@ from collections.abc import Iterable
 from reiter import reiter
 from nfa import nfa, epsilon
 
-class are(tuple): # pylint: disable=E1101
+class are(tuple):
     """
     Base class for abstract regular expression instances (and the individual
     nodes found within an abstract syntax tree instance). Abstract regular
@@ -70,7 +70,7 @@ class are(tuple): # pylint: disable=E1101
             if _nfa_arg is not None:
                 _nfa_[epsilon].append(_nfa_arg)
 
-        # In the root invocation, `None` implies that the NFA instance should
+        # In the root invocation, ``None`` implies that the NFA instance should
         # reject all strings. Otherwise, return the assembled NFA instance.
         return -nfa() if (_nfa_ is None and _nfa is None) else _nfa_
 
@@ -87,7 +87,7 @@ class are(tuple): # pylint: disable=E1101
         >>> a(['y', 'z', 'y', 'z'])
         4
         """
-        self._compiled = self.to_nfa().compile() # Compile NFA into transition table.
+        setattr(self, '_compiled', self.to_nfa().compile()) # Transition table.
         return self
 
     def to_re(self: are) -> str:
@@ -183,10 +183,9 @@ class are(tuple): # pylint: disable=E1101
 
         # Determine the length of the longest match either using the compiled
         # NFA (if it is present) or the instance itself.
-        # pylint: disable=E1101
-        return (
-            self._compiled(string, full=full) \
-            if hasattr(self, "_compiled") and self._compiled is not None else \
+        return ( # pylint: disable=no-member
+            self._compiled(string, full=full)
+            if hasattr(self, '_compiled') and self._compiled is not None else
             self._match(string, full, _index)
         )
 
@@ -208,8 +207,8 @@ class are(tuple): # pylint: disable=E1101
         >>> eval(str(a))
         rep(con(lit(1), alt(lit(2), lit(3))))
         """
-        return\
-            type(self).__name__ +\
+        return \
+            type(self).__name__ + \
             (str(tuple(self)) if len(self) != 1 else str(tuple(self))[:-2] + ')')
 
     def __repr__(self: are) -> str:
@@ -227,17 +226,17 @@ class nul(are):
     abstract regular expression instance that cannot be satisfied by any
     iterable (*i.e.*, that cannot be satisfied by any abstract string).
 
-    >>> (nul()(iter("ab")), nul()(iter("abc"), full=False))
+    >>> (nul()(iter('ab')), nul()(iter('abc'), full=False))
     (None, None)
     >>> r = nul()
-    >>> (r(""), r("abc"), r("", full=False), r("abc", full=False))
+    >>> (r(''), r('abc'), r('', full=False), r('abc', full=False))
     (None, None, None, None)
 
     More usage examples involving compilation of :obj:`are` instances
     that contain instances of this class are presented below.
 
     >>> r = r.compile()
-    >>> (r(""), r("abc"), r("", full=False), r("abc", full=False))
+    >>> (r(''), r('abc'), r('', full=False), r('abc', full=False))
     (None, None, None, None)
     >>> ((con(nul(), lit('a')))('a'), (con(nul(), lit('a'))).compile()('a'))
     (None, None)
@@ -261,12 +260,20 @@ class nul(are):
     ValueError: input must be an iterable
     """
     def __new__(cls):
+        """Instance constructor."""
         return super().__new__(cls)
 
-    # pylint: disable=R0201,W0613
+    # pylint: disable=unused-argument
     def _match(self: are, string, full: bool, _index: int):
+        """
+        One of an ensemble of mutually recursive matching functions (one function
+        per type of base case or internal node of an abstract regular expression).
+        Accepts an iterable of symbols and returns the length of the longest matching
+        prefix of that string (or ``None``, if the matching criteria are not met).
+        These functions are invoked by the :obj:`are.__call__` method of an instance.
+        """
         try:
-            symbol = string[_index] # pylint: disable=W0612
+            _ = string[_index] # May consume a symbol.
             return None
         except (StopIteration, IndexError):
             return None
@@ -277,16 +284,16 @@ class emp(are):
     abstract regular expression instance that is satisfied only by an
     empty iterable (*i.e.*, an abstract string with a length of zero).
 
-    >>> (emp()(""), emp()("ab"))
+    >>> (emp()(''), emp()('ab'))
     (0, None)
-    >>> emp()(iter("ab")) is None
+    >>> emp()(iter('ab')) is None
     True
-    >>> emp()("abc", full=False)
+    >>> emp()('abc', full=False)
     0
-    >>> emp()(iter("abc"), full=False)
+    >>> emp()(iter('abc'), full=False)
     0
     >>> r = emp().compile()
-    >>> (r(""), r("abc"))
+    >>> (r(''), r('abc'))
     (0, None)
 
     Any attempt to apply an abstract regular expression instance to a
@@ -298,16 +305,24 @@ class emp(are):
     ValueError: input must be an iterable
     """
     def __new__(cls):
+        """Instance constructor."""
         return super().__new__(cls)
 
-    # pylint: disable=R0201
     def _match(self: are, string, full: bool, _index: int) -> Optional[int]:
+        """
+        One of an ensemble of mutually recursive matching functions (one function
+        per type of base case or internal node of an abstract regular expression).
+        Accepts an iterable of symbols and returns the length of the longest matching
+        prefix of that string (or ``None``, if the matching criteria are not met).
+        These functions are invoked by the :obj:`are.__call__` method of an instance.
+        """
         try:
-            symbol = string[_index] # pylint: disable=W0612
+            _ = string[_index] # May consume a symbol.
             if not full:
                 return 0
-            else:
-                return None
+
+            return None
+
         except (StopIteration, IndexError):
             return 0
 
@@ -318,40 +333,49 @@ class lit(are):
     cases) corresponding to abstract string *literals* (in the formal sense
     associated with the mathematical definition of a regular expression).
 
-    >>> (lit("a")(""), lit("a")("a"), lit("a")("ab"))
+    >>> (lit('a')(''), lit('a')('a'), lit('a')('ab'))
     (None, 1, None)
-    >>> (lit("a")("", full=False), lit("a")("ab", full=False))
+    >>> (lit('a')('', full=False), lit('a')('ab', full=False))
     (None, 1)
-    >>> lit("a")(iter("ab"), full=False)
+    >>> lit('a')(iter('ab'), full=False)
     1
-    >>> r = lit("a").compile()
-    >>> (r("a"), r(""))
+    >>> r = lit('a').compile()
+    >>> (r('a'), r(''))
     (1, None)
 
     Any attempt to apply an abstract regular expression instance to a
     non-iterable raises an exception.
 
-    >>> lit("a")(123)
+    >>> lit('a')(123)
     Traceback (most recent call last):
       ...
     ValueError: input must be an iterable
     """
     def __new__(cls, argument):
+        """Instance constructor."""
         return super().__new__(cls, [argument])
 
     def _match(self: are, string, full: bool, _index: int) -> Optional[int]:
+        """
+        One of an ensemble of mutually recursive matching functions (one function
+        per type of base case or internal node of an abstract regular expression).
+        Accepts an iterable of symbols and returns the length of the longest matching
+        prefix of that string (or ``None``, if the matching criteria are not met).
+        These functions are invoked by the :obj:`are.__call__` method of an instance.
+        """
         try:
             symbol = string[_index]
 
             if symbol == self[0]:
                 if not full:
                     return 1
-                else:
-                    result = emp()._match(string, full=True, _index=(_index + 1))
-                    if result == 0:
-                        return 1
 
-            return None # String does not satisfy the regular expression.
+                # pylint: disable=protected-access
+                result = emp()._match(string, full=True, _index=(_index + 1))
+                if result == 0:
+                    return 1
+
+            return None # Abstract string does not satisfy the regular expression.
 
         except (StopIteration, IndexError):
             return None
@@ -394,9 +418,18 @@ class con(are):
     ValueError: input must be an iterable
     """
     def __new__(cls, *arguments):
+        """Instance constructor."""
         return super().__new__(cls, [*arguments])
 
     def _match(self: are, string, full: bool, _index: int) -> Optional[int]:
+        """
+        One of an ensemble of mutually recursive matching functions (one function
+        per type of base case or internal node of an abstract regular expression).
+        Accepts an iterable of symbols and returns the length of the longest matching
+        prefix of that string (or ``None``, if the matching criteria are not met).
+        These functions are invoked by the :obj:`are.__call__` method of an instance.
+        """
+        # pylint: disable=protected-access
         lengths = self[0]._match(string, full=False, _index=_index)
 
         if lengths is not None:
@@ -406,12 +439,12 @@ class con(are):
 
                 if not full:
                     return lengths
-                else:
-                    result = emp()._match(string, full=True, _index=(_index + lengths))
-                    if result == 0:
-                        return lengths
 
-        return None # String does not satisfy the regular expression.
+                result = emp()._match(string, full=True, _index=(_index + lengths))
+                if result == 0:
+                    return lengths
+
+        return None # Abstract string does not satisfy the regular expression.
 
 class alt(are):
     """
@@ -484,30 +517,57 @@ class alt(are):
     ValueError: input must be an iterable
     """
     def __new__(cls, *arguments):
+        """Instance constructor."""
         return super().__new__(cls, [*arguments])
 
     def _match(self: are, string, full: bool, _index: int) -> Optional[int]:
+        """
+        One of an ensemble of mutually recursive matching functions (one function
+        per type of base case or internal node of an abstract regular expression).
+        Accepts an iterable of symbols and returns the length of the longest matching
+        prefix of that string (or ``None``, if the matching criteria are not met).
+        These functions are invoked by the :obj:`are.__call__` method of an instance.
+        """
+        # pylint: disable=protected-access
+
+        # Determine whether (and by what length of substring) the first alternative
+        # is satisfied.
         lengths = [self[0]._match(string, full=full, _index=_index)]
-        if lengths[-1] is None:
+
+        if lengths[0] is None:
+            # First alternative is not satisfied, so determine separately whether
+            # (and by what length of substring) the second alternative is satisfied.
             return self[1]._match(string, full=full, _index=_index)
 
+        # First alternative is satisfied; determine if second alternative is also
+        # satisfied (for example, in case it is satisfied by a longer portion of the
+        # abstract string).
         lengths.append(self[1]._match(string, full=full, _index=_index))
 
-        # The cases where `lengths [0] is None` are handled by the recursive call on line 226.
         if lengths[1] is None:
+            # Second alternative is not satisfied, so return the length of the
+            # satisfying substring (*unless* it has been specified that the full
+            # string must satisfy this instance).
             length = lengths[0]
             if not full:
                 return length
-            else:
-                result = emp()._match(string, full=True, _index=(_index + length))
-                return length if result == 0 else None
-        else: # Both succeeded (all other cases handled in recursive call on line 226).
-            if not full:
-                return max(lengths)
-            else:
-                length = max(lengths)
-                result = emp()._match(string, full=True, _index=(_index + length))
-                return length if result == 0 else None
+
+            # Ensure that the full string satisfies this instance; otherwise,
+            # indicate failure.
+            result = emp()._match(string, full=True, _index=(_index + length))
+            return length if result == 0 else None
+
+        # Both alternatives succeeded, so return the length of the longer of the
+        # two satisfied alternatives (*unless* it has been specified that the full
+        # string must satisfy this instance).
+        length = max(lengths)
+        if not full:
+            return length
+
+        # Ensure that the full string satisfies this instance; otherwise,
+        # indicate failure.
+        result = emp()._match(string, full=True, _index=(_index + length))
+        return length if result == 0 else None
 
 class rep(are):
     """
@@ -541,9 +601,9 @@ class rep(are):
 
     Note that the empty abstract string satisfies any instance of this class.
 
-    >>> r("")
+    >>> r('')
     0
-    >>> r("bbbb", full=False)
+    >>> r('bbbb', full=False)
     0
     >>> all([r('a'*i + 'b', full=False) == i for i in range(100)])
     True
@@ -559,9 +619,18 @@ class rep(are):
     ValueError: input must be an iterable
     """
     def __new__(cls, argument):
+        """Instance constructor."""
         return super().__new__(cls, [argument])
 
     def _match(self: are, string, full: bool, _index: int) -> Optional[int]:
+        """
+        One of an ensemble of mutually recursive matching functions (one function
+        per type of base case or internal node of an abstract regular expression).
+        Accepts an iterable of symbols and returns the length of the longest matching
+        prefix of that string (or ``None``, if the matching criteria are not met).
+        These functions are invoked by the :obj:`are.__call__` method of an instance.
+        """
+        # pylint: disable=protected-access
         lengths = 0
         length = self[0]._match(string, full=False, _index=_index)
         while length is not None:
@@ -570,12 +639,12 @@ class rep(are):
 
         if not full:
             return lengths
-        else:
-            result = emp()._match(string, full=True, _index=(_index + lengths))
-            if result == 0:
-                return lengths
 
-        return None # String does not satisfy the regular expression.
+        result = emp()._match(string, full=True, _index=(_index + lengths))
+        if result == 0:
+            return lengths
 
-if __name__ == "__main__":
+        return None # Abstract string does not satisfy the regular expression.
+
+if __name__ == '__main__':
     doctest.testmod() # pragma: no cover
