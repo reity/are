@@ -3,6 +3,8 @@ Test suite in which functional unit tests for matching, compilation, and
 conversion methods are applied to a sample of a bounded subset of all
 possible data structure instances.
 """
+from __future__ import annotations
+from typing import Sequence, Iterable
 from importlib import import_module
 from itertools import product, islice
 from random import sample
@@ -29,7 +31,7 @@ class Test_namespace(TestCase):
         module = import_module('are.are')
         self.assertTrue(api_methods().issubset(module.__dict__.keys()))
 
-def strs(alphabet, k):
+def strs(alphabet: Sequence[str], k: int) -> Iterable[str]:
     """
     Yield all strings of length at most ``k`` containing
     only the characters in the supplied alphabet of symbols.
@@ -38,7 +40,7 @@ def strs(alphabet, k):
         for s in product(*[alphabet]*i):
             yield ''.join(s)
 
-def ares(alphabet):
+def ares(alphabet: Sequence[str]) -> Iterable[are]:
     """
     Yield a sample of all abstract regular expression instances
     for the supplied alphabet of symbols.
@@ -52,7 +54,7 @@ def ares(alphabet):
                 rs.append(r)
                 yield r
 
-def longest(re_r, s):
+def longest(re_r: re.Pattern, s: str) -> int:
     """
     Find the length of the longest prefix substring that matches a
     regular expression compiled using the ``re`` module.

@@ -39,7 +39,17 @@ The library can be imported in the usual way::
 
 Examples
 ^^^^^^^^
-This library makes it possible to construct abstract regular expressions that work with a chosen symbol type. In the example below, a regular expression is defined (using only the literal and concatenation operators) in which symbols are integers. It is then applied to an iterable of integers. This returns the iterable's length (as an integer) if that iterable satisfies the abstract regular expression::
+
+.. |are| replace:: ``are``
+.. _are: https://are.readthedocs.io/en/2.1.0/_source/are.html#are.are.are
+
+.. |lit| replace:: ``lit``
+.. _lit: https://are.readthedocs.io/en/2.1.0/_source/are.html#are.are.lit
+
+.. |con| replace:: ``con``
+.. _con: https://are.readthedocs.io/en/2.1.0/_source/are.html#are.are.con
+
+This library makes it possible to construct abstract regular expressions (represented as instances of the |are|_ class) that work with a chosen symbol type. In the example below, a regular expression is defined (using the literal operator |lit|_ and concatenation operator |con|_) in which symbols are integers. It is then applied to an iterable of integers. This returns the iterable's length (as an integer) if that iterable satisfies the abstract regular expression::
 
     >>> from are import *
     >>> a = con(lit(1), con(lit(2), lit(3)))
@@ -62,13 +72,19 @@ Operators for alternation and repetition of abstract regular expressions are als
     >>> a([3, 3, 3, 3])
     4
 
-The ``emp`` constructor can be used to create an abstract regular expression that is satisfied by the empty iterable::
+.. |emp| replace:: ``emp``
+.. _emp: https://are.readthedocs.io/en/2.1.0/_source/are.html#are.are.emp
+
+The |emp|_ constructor can be used to create an abstract regular expression that is satisfied by the empty iterable::
 
     >>> a = emp()
     >>> a([])
     0
 
-The ``nul`` constructor can be used to create an abstract regular expression that cannot be satisfied::
+.. |nul| replace:: ``nul``
+.. _nul: https://are.readthedocs.io/en/2.1.0/_source/are.html#are.are.nul
+
+The |nul|_ constructor can be used to create an abstract regular expression that cannot be satisfied::
 
     >>> a = nul()
     >>> a([]) is None

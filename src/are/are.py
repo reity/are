@@ -5,8 +5,8 @@ necessary to work with regular expressions as abstract mathematical objects.
 """
 from __future__ import annotations
 import doctest
-from typing import Optional
-from collections.abc import Iterable
+from typing import Optional, Iterable
+import collections.abc
 from reiter import reiter
 from nfa import nfa, epsilon
 
@@ -126,7 +126,7 @@ class are(tuple):
 
         return re_
 
-    def __call__(self: are, string, full: bool = True, _index: int = 0) -> Optional[int]:
+    def __call__(self: are, string: Iterable, full: bool = True, _index: int = 0) -> Optional[int]:
         """
         Determine whether an iterable of symbols (*i.e.*, an abstract *string*
         in the formal sense associated with the mathematical definition of a
@@ -177,7 +177,7 @@ class are(tuple):
           ...
         ValueError: input must be an iterable
         """
-        if not isinstance(string, (Iterable, reiter)):
+        if not isinstance(string, (collections.abc.Iterable, reiter)):
             raise ValueError('input must be an iterable')
         string = reiter(string)
 
@@ -264,7 +264,7 @@ class nul(are):
         return super().__new__(cls)
 
     # pylint: disable=unused-argument
-    def _match(self: are, string, full: bool, _index: int):
+    def _match(self: are, string: Iterable, full: bool, _index: int):
         """
         One of an ensemble of mutually recursive matching functions (one function
         per type of base case or internal node of an abstract regular expression).
@@ -308,7 +308,7 @@ class emp(are):
         """Instance constructor."""
         return super().__new__(cls)
 
-    def _match(self: are, string, full: bool, _index: int) -> Optional[int]:
+    def _match(self: are, string: Iterable, full: bool, _index: int) -> Optional[int]:
         """
         One of an ensemble of mutually recursive matching functions (one function
         per type of base case or internal node of an abstract regular expression).
@@ -355,7 +355,7 @@ class lit(are):
         """Instance constructor."""
         return super().__new__(cls, [argument])
 
-    def _match(self: are, string, full: bool, _index: int) -> Optional[int]:
+    def _match(self: are, string: Iterable, full: bool, _index: int) -> Optional[int]:
         """
         One of an ensemble of mutually recursive matching functions (one function
         per type of base case or internal node of an abstract regular expression).
@@ -421,7 +421,7 @@ class con(are):
         """Instance constructor."""
         return super().__new__(cls, [*arguments])
 
-    def _match(self: are, string, full: bool, _index: int) -> Optional[int]:
+    def _match(self: are, string: Iterable, full: bool, _index: int) -> Optional[int]:
         """
         One of an ensemble of mutually recursive matching functions (one function
         per type of base case or internal node of an abstract regular expression).
@@ -520,7 +520,7 @@ class alt(are):
         """Instance constructor."""
         return super().__new__(cls, [*arguments])
 
-    def _match(self: are, string, full: bool, _index: int) -> Optional[int]:
+    def _match(self: are, string: Iterable, full: bool, _index: int) -> Optional[int]:
         """
         One of an ensemble of mutually recursive matching functions (one function
         per type of base case or internal node of an abstract regular expression).
@@ -622,7 +622,7 @@ class rep(are):
         """Instance constructor."""
         return super().__new__(cls, [argument])
 
-    def _match(self: are, string, full: bool, _index: int) -> Optional[int]:
+    def _match(self: are, string: Iterable, full: bool, _index: int) -> Optional[int]:
         """
         One of an ensemble of mutually recursive matching functions (one function
         per type of base case or internal node of an abstract regular expression).
