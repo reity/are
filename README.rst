@@ -116,12 +116,12 @@ All unit tests are executed and their coverage is measured when using `pytest <h
 
 The subset of the unit tests included in the module itself can be executed using `doctest <https://docs.python.org/3/library/doctest.html>`__::
 
-    python are/are.py -v
+    python src/are/are.py -v
 
 Style conventions are enforced using `Pylint <https://pylint.pycqa.org>`__::
 
     python -m pip install .[lint]
-    python -m pylint are test/test_are.py
+    python -m pylint src/are test/test_are.py
 
 Contributions
 ^^^^^^^^^^^^^
@@ -144,7 +144,7 @@ Ensure that the correct version number appears in ``pyproject.toml``, and that a
 
 Remove any old build/distribution files. Then, package the source into a distribution archive::
 
-    rm -rf build dist *.egg-info
+    rm -rf build dist src/*.egg-info
     python -m build --sdist --wheel .
 
 Finally, upload the package distribution archive to `PyPI <https://pypi.org>`__::
