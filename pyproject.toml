@@ -1,0 +1,52 @@
+[project]
+name = "are"
+version = "2.1.0"
+description = """\
+    Library for defining and working with abstract \
+    regular expressions that work with any symbol type.\
+    """
+license = {text = "MIT"}
+authors = [
+    {name = "Andrei Lapets"},
+    {email = "a@lapets.io"}
+]
+readme = "README.rst"
+requires-python = ">=3.7"
+dependencies = [
+    "reiter~=0.7",
+    "nfa~=3.1"
+]
+
+[project.urls]
+Repository = "https://github.com/reity/are"
+Documentation = "https://are.readthedocs.io"
+
+[project.optional-dependencies]
+docs = [
+    "toml~=0.10.2",
+    "sphinx~=4.2.0",
+    "sphinx-rtd-theme~=1.0.0"
+]
+test = [
+    "pytest~=7.0",
+    "pytest-cov~=3.0"
+]
+lint = [
+    "pylint~=2.14.0"
+]
+coveralls = [
+    "coveralls~=3.3.1"
+]
+publish = [
+    "build~=0.8",
+    "twine~=4.0"
+]
+
+[build-system]
+requires = [
+    "setuptools~=62.0"
+]
+build-backend = "setuptools.build_meta"
+
+[tool.pytest.ini_options]
+addopts = "--doctest-modules --ignore=docs --cov=are --cov-report term-missing"
